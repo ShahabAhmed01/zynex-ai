@@ -7,11 +7,11 @@ from pydantic import BaseModel
 
 from backend.models.schemas import ResearchRequest, JobStatus, ProgressUpdate
 from backend.agents.query_planner import plan_research
-from backend.agents.web_researcher import execute_research
+from backend.agents.web_researcher import research_web
 from backend.agents.source_analyzer import analyze_sources
 from backend.agents.report_composer import compose_report
 from backend.agents.chart_generator import generate_charts
-from backend.agents.export_engine import export_pdf, export_slides
+from backend.agents.export_engine import generate_pdf, generate_slides
 
 router = APIRouter()
 
@@ -31,7 +31,7 @@ async def run_pipeline(job_id: str, topic: str, depth: str):
         
         # Stage 2: Web Research
         await queue.put(ProgressUpdate(step=2, total_steps=6, stage="researching", message="Searching the web for sources...", progress=0.3))
-        raw_sources = await execute_research(plan["queries"])
+        raw_sources = await research_web(plan["queries"])
         
         # Stage 3: Source Analysis
         await queue.put(ProgressUpdate(step=3, total_steps=6, stage="analyzing", message="Analyzing and summarizing sources...", progress=0.5))
@@ -97,7 +97,7 @@ async def get_export_pdf(job_id: str):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
         
-    pdf_bytes = await export_pdf(reports[job_id], chart_data.get(job_id, {}))
+    pdf_bytes = await generate_pdf(reports[job_id], chart_data.get(job_id, {}))
     
     # Save to temp file
     import os
@@ -114,7 +114,7 @@ async def get_export_slides(job_id: str):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
         
-    html_content = await export_slides(reports[job_id], chart_data.get(job_id, {}))
+    html_content = await generate_slides(reports[job_id], chart_data.get(job_id, {}))
     
     # Save to temp file
     import os

@@ -1,0 +1,127 @@
+import asyncio
+import json
+from uuid import uuid4
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi.responses import StreamingResponse, FileResponse
+from pydantic import BaseModel
+
+from backend.models.schemas import ResearchRequest, JobStatus, ProgressUpdate
+from backend.agents.query_planner import plan_research
+from backend.agents.web_researcher import execute_research
+from backend.agents.source_analyzer import analyze_sources
+from backend.agents.report_composer import compose_report
+from backend.agents.chart_generator import generate_charts
+from backend.agents.export_engine import export_pdf, export_slides
+
+router = APIRouter()
+
+# In-memory job storage
+jobs: dict[str, JobStatus] = {}
+job_queues: dict[str, asyncio.Queue] = {}
+reports: dict[str, dict] = {}
+chart_data: dict[str, dict] = {}
+
+async def run_pipeline(job_id: str, topic: str, depth: str):
+    queue = job_queues[job_id]
+    
+    try:
+        # Stage 1: Planning
+        await queue.put(ProgressUpdate(step=1, total_steps=6, stage="planning", message="Generating research queries and outline...", progress=0.1))
+        plan = await plan_research(topic, depth)
+        
+        # Stage 2: Web Research
+        await queue.put(ProgressUpdate(step=2, total_steps=6, stage="researching", message="Searching the web for sources...", progress=0.3))
+        raw_sources = await execute_research(plan["queries"])
+        
+        # Stage 3: Source Analysis
+        await queue.put(ProgressUpdate(step=3, total_steps=6, stage="analyzing", message="Analyzing and summarizing sources...", progress=0.5))
+        analyzed_sources = await analyze_sources(raw_sources)
+        
+        # Stage 4: Report Composition
+        await queue.put(ProgressUpdate(step=4, total_steps=6, stage="composing", message="Composing structured report...", progress=0.7))
+        report = await compose_report(topic, analyzed_sources, plan["outline"])
+        
+        # Stage 5: Chart Generation
+        await queue.put(ProgressUpdate(step=5, total_steps=6, stage="charting", message="Generating charts and visualizations...", progress=0.85))
+        charts = await generate_charts(report.charts)
+        
+        # Store results
+        reports[job_id] = report
+        chart_data[job_id] = charts
+        
+        # Stage 6: Completed
+        jobs[job_id].status = "completed"
+        jobs[job_id].report = report
+        await queue.put(ProgressUpdate(step=6, total_steps=6, stage="completed", message="Research complete!", progress=1.0))
+        
+    except Exception as e:
+        jobs[job_id].status = "failed"
+        jobs[job_id].error = str(e)
+        await queue.put(ProgressUpdate(step=6, total_steps=6, stage="failed", message=f"Error: {str(e)}", progress=1.0))
+
+@router.post("/api/research")
+async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
+    job_id = str(uuid4())
+    jobs[job_id] = JobStatus(job_id=job_id, status="pending")
+    job_queues[job_id] = asyncio.Queue()
+    
+    background_tasks.add_task(run_pipeline, job_id, request.topic, request.depth)
+    return {"job_id": job_id}
+
+@router.get("/api/research/{job_id}/status")
+async def stream_status(job_id: str):
+    if job_id not in job_queues:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    async def event_stream():
+        queue = job_queues[job_id]
+        while True:
+            update = await queue.get()
+            yield f"data: {update.model_dump_json()}\n\n"
+            if update.stage in ("completed", "failed"):
+                break
+                
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+@router.get("/api/research/{job_id}/report")
+async def get_report(job_id: str):
+    if job_id not in reports:
+        raise HTTPException(status_code=404, detail="Report not found or not completed")
+    
+    report_dict = reports[job_id].model_dump()
+    report_dict["charts_base64"] = chart_data.get(job_id, {})
+    return report_dict
+
+@router.get("/api/research/{job_id}/export/pdf")
+async def get_export_pdf(job_id: str):
+    if job_id not in reports:
+        raise HTTPException(status_code=404, detail="Report not found")
+        
+    pdf_bytes = await export_pdf(reports[job_id], chart_data.get(job_id, {}))
+    
+    # Save to temp file
+    import os
+    import tempfile
+    
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    with os.fdopen(fd, 'wb') as f:
+        f.write(pdf_bytes)
+        
+    return FileResponse(path, media_type="application/pdf", filename=f"Zynex_Report_{job_id[:8]}.pdf")
+
+@router.get("/api/research/{job_id}/export/slides")
+async def get_export_slides(job_id: str):
+    if job_id not in reports:
+        raise HTTPException(status_code=404, detail="Report not found")
+        
+    html_content = await export_slides(reports[job_id], chart_data.get(job_id, {}))
+    
+    # Save to temp file
+    import os
+    import tempfile
+    
+    fd, path = tempfile.mkstemp(suffix=".html")
+    with os.fdopen(fd, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+        
+    return FileResponse(path, media_type="text/html", filename=f"Zynex_Slides_{job_id[:8]}.html")

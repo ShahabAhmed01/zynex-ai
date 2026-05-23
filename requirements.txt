@@ -1,0 +1,30 @@
+# ⚡ Zynex — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Web framework & server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# LLM client (OpenRouter via OpenAI-compatible API)
+openai>=1.6.0
+
+# Web search (free, no API key needed)
+duckduckgo-search>=4.0.0
+
+# PDF generation
+weasyprint>=60.0
+
+# Chart generation
+matplotlib>=3.8.0
+
+# Templating (PDF & slide reports)
+jinja2>=3.1.0
+
+# Environment variable loading
+python-dotenv>=1.0.0
+
+# Form data parsing
+python-multipart>=0.0.6
+
+# Data validation & serialization
+pydantic>=2.5.0

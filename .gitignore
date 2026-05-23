@@ -1,0 +1,92 @@
+# ────────────────────────────────────────────────────────────
+#  ⚡ Zynex — Git Ignore Rules
+# ────────────────────────────────────────────────────────────
+
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Virtual Environments ────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ── Environment Variables ───────────────────────────────────
+.env
+.env.local
+.env.production
+!.env.example
+
+# ── IDE / Editor ────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ── OS Generated Files ─────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Testing ─────────────────────────────────────────────────
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Generated Output ───────────────────────────────────────
+*.pdf
+*.log
+output/
+exports/
+temp/
+tmp/
+
+# ── Node (in case of future frontend tooling) ──────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ── Jupyter Notebooks ──────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Distribution / Packaging ───────────────────────────────
+*.manifest
+*.spec
+MANIFEST
+
+# ── Misc ────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
+.cache/

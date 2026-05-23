@@ -123,7 +123,7 @@
     </div>
     
     {% if loop.index0 < charts.values()|length %}
-        {% set chart_img = charts.values()|list|reverse|list|pop %}
+        {% set chart_img = (charts.values()|list)[loop.index0] %}
         <div class="chart-container">
             <img src="data:image/png;base64,{{ chart_img }}" alt="Chart for {{ section.title }}">
         </div>

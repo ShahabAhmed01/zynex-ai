@@ -54,7 +54,7 @@
                 </section>
                 
                 {% if loop.index0 < charts.values()|length %}
-                    {% set chart_img = charts.values()|list|reverse|list|pop %}
+                    {% set chart_img = (charts.values()|list)[loop.index0] %}
                     <section>
                         <h2>Data Visualization</h2>
                         <img class="chart-img" src="data:image/png;base64,{{ chart_img }}">

@@ -66,13 +66,13 @@ Zynex is an **Autonomous AI Research & Report Agent** — a web application wher
 
 ### NOT YET DONE (pick up from here)
 
-- [ ] **End-to-end testing** — The server now starts successfully (`python run.py`). You need to open `http://localhost:8000`, submit a topic, and verify the full agentic pipeline works.
+- [x] **End-to-end testing** — The server now starts successfully (`python run.py`). You need to open `http://localhost:8000`, submit a topic, and verify the full agentic pipeline works.
 - [x] **Fix basic runtime bugs** — Fixed import errors and static file serving paths. The server is now healthy.
-- [ ] **Test PDF export** — WeasyPrint requires system dependencies (GTK/Pango/Cairo on some OSes)
-- [ ] **Test slides export** — Verify the reveal.js-based HTML slides render correctly
-- [ ] **Test demo mode** — Verify the app works fully without API keys
-- [ ] **Test with real API key** — Set `OPENROUTER_API_KEY` and verify real LLM responses
-- [ ] **UI polish** — The CSS is complete but may need tweaks after seeing it in a browser
+- [x] **Test PDF export** — WeasyPrint requires system dependencies (GTK/Pango/Cairo on some OSes)
+- [x] **Test slides export** — Verify the reveal.js-based HTML slides render correctly
+- [x] **Test demo mode** — Verify the app works fully without API keys
+- [ ] **Test with OpenRouter API** — Set `OPENROUTER_API_KEY` and verify it generates real AI reports
+- [ ] **UI Polish** — Ensure the progress bar updates smoothly, charts render properly, and the theme looks premium
 - [ ] **Error handling** — Add proper error boundaries in the frontend JS
 - [ ] **Deployment** — Not yet deployed anywhere (Railway, Render, Vercel, etc.)
 

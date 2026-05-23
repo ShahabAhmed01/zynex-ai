@@ -1,0 +1,17 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: connect repo at https://dashboard.render.com → New → Blueprint
+services:
+  - type: web
+    name: zynex
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: DEFAULT_MODEL
+        value: google/gemini-2.0-flash-001
+      - key: HOST
+        value: 0.0.0.0
+      - key: RELOAD
+        value: "false"

@@ -137,6 +137,18 @@ Open your browser to **[http://localhost:8000](http://localhost:8000)** and star
 
 > **💡 Tip**: The app works in **demo mode** without any API keys. Add an OpenRouter key to unlock full AI-powered analysis with deeper insights.
 
+### Verify OpenRouter
+
+```bash
+python scripts/verify_openrouter.py
+# Or after the server is running:
+curl "http://localhost:8000/api/health/llm?verify=true"
+```
+
+### Deploy to production
+
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for Render, Railway, and Docker. One-click: connect this repo on [Render](https://render.com) using the included `render.yaml` blueprint.
+
 ---
 
 ## 📖 API Documentation

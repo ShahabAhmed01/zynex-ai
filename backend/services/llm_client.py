@@ -223,3 +223,54 @@ async def generate_creative(
         temperature=0.7,
         max_tokens=max_tokens,
     )
+
+
+async def verify_connection() -> dict:
+    """
+    Ping OpenRouter with a minimal prompt to confirm the API key and model work.
+    Does not use demo-mode fallbacks.
+    """
+    if settings.demo_mode:
+        return {
+            "ok": False,
+            "demo_mode": True,
+            "model": settings.DEFAULT_MODEL,
+            "message": "OPENROUTER_API_KEY not set — running in demo mode",
+        }
+
+    client = _get_client()
+    chosen_model = settings.DEFAULT_MODEL
+
+    try:
+        response = await client.chat.completions.create(
+            model=chosen_model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": 'Reply with exactly one word: OK',
+                }
+            ],
+            temperature=0,
+            max_tokens=16,
+            extra_headers={
+                "HTTP-Referer": "https://github.com/ShahabAhmed01/zynex-ai",
+                "X-Title": "Zynex Research Agent",
+            },
+        )
+        content = (response.choices[0].message.content or "").strip()
+        ok = bool(content)
+        return {
+            "ok": ok,
+            "demo_mode": False,
+            "model": chosen_model,
+            "message": "OpenRouter connection successful" if ok else "Empty response from model",
+            "sample": content[:80],
+        }
+    except Exception as exc:
+        logger.error("OpenRouter verification failed: %s", exc)
+        return {
+            "ok": False,
+            "demo_mode": False,
+            "model": chosen_model,
+            "message": str(exc),
+        }

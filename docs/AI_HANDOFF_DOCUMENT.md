@@ -72,8 +72,8 @@ Zynex is an **Autonomous AI Research & Report Agent** — a web application wher
 - [x] **Test slides export** — Verify the reveal.js-based HTML slides render correctly
 - [x] **Test demo mode** — Verify the app works fully without API keys
 - [ ] **Test with OpenRouter API** — Set `OPENROUTER_API_KEY` and verify it generates real AI reports
-- [ ] **UI Polish** — Ensure the progress bar updates smoothly, charts render properly, and the theme looks premium
-- [ ] **Error handling** — Add proper error boundaries in the frontend JS
+- [x] **UI Polish** — Ensure the progress bar updates smoothly, charts render properly, and the theme looks premium
+- [x] **Error handling** — Add proper error boundaries in the frontend JS
 - [ ] **Deployment** — Not yet deployed anywhere (Railway, Render, Vercel, etc.)
 
 ### FUTURE ENHANCEMENTS (not planned for v1)

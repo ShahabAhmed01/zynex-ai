@@ -12,7 +12,13 @@
     currentJobId: null,
     currentSection: 'input',
     eventSource: null,
-    progressStages: ['planning', 'researching', 'analyzing', 'composing', 'charts', 'done'],
+    progressStages: ['planning', 'researching', 'analyzing', 'composing', 'charting', 'completed'],
+    stageAliases: {
+      charts: 'charting',
+      charting: 'charting',
+      done: 'completed',
+      completed: 'completed',
+    },
     currentStageIndex: -1,
   };
 
@@ -282,14 +288,20 @@
   function updateProgressUI(update) {
     // Progress percentage
     if (update.progress !== undefined) {
-      const pct = Math.min(Math.max(Math.round(update.progress), 0), 100);
+      const raw = Number(update.progress);
+      const pct = Math.min(
+        Math.max(Math.round(raw <= 1 ? raw * 100 : raw), 0),
+        100
+      );
       dom.progressBar.style.width = pct + '%';
       dom.progressPercent.textContent = pct + '%';
     }
 
     // Stage update
     if (update.stage) {
-      const stageName = update.stage.toLowerCase();
+      const stageName = (
+        state.stageAliases[update.stage.toLowerCase()] || update.stage.toLowerCase()
+      );
       const stageIndex = state.progressStages.indexOf(stageName);
 
       if (stageIndex >= 0 && stageIndex > state.currentStageIndex) {

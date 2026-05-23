@@ -477,6 +477,7 @@ SEARCH_MAX_RESULTS=10
 - Keep using DuckDuckGo for search (free) and OpenRouter for LLM.
 - The app MUST work in demo mode (no API keys) with mock data.
 - **CRITICAL**: Push all changes to `https://github.com/Shahabahmed01/zynex-ai` immediately upon completing any bug fix, feature, or document update. Do not ask for permission to push. Do it automatically and constantly.
+- **BE FULLY AUTONOMOUS**: Do not ask the user for permission to move to the next task. The user shouldn't need to tell you anything. Figure out the next step from the 'NOT YET DONE' section and complete the task entirely on your own.
 
 ### The One Command to Give Any AI
 
@@ -488,7 +489,8 @@ If you are Shahab and your AI capacity has run out, paste this to your next AI:
 > **1. First, read the file `docs/AI_HANDOFF_DOCUMENT.md` in the repo. It contains everything you need to know about the architecture, current state, and what needs to be done.**
 > **2. Pick up from the 'NOT YET DONE' section in that document and complete the remaining tasks.**
 > **3. IMPORTANT RULE: Update everything on GitHub automatically without delay. Whenever you complete a task or fix a bug, immediately commit and push it to the repository without asking or waiting for my command.**
-> **4. Do not summarize your plans unless absolutely necessary; just start executing and pushing."**
+> **4. Do not summarize your plans unless absolutely necessary; just start executing and pushing.**
+> **5. BE FULLY AUTONOMOUS: I shouldn't need to tell you anything. Look at the NOT YET DONE list, figure out the next step, and complete the tasks on your own without asking for permission to proceed.**"
 
 That's it. Any AI that can read a GitHub repo will be able to continue seamlessly.
 

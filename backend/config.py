@@ -52,12 +52,12 @@ class Settings:
         """Run startup validation – prints warnings but never crashes."""
         if self.demo_mode:
             print(
-                "\n⚠️  OPENROUTER_API_KEY not set – Zynex is running in DEMO MODE.\n"
-                "   Set the key in a .env file or environment variable for real AI responses.\n"
-            )
+            "\nWARNING: OPENROUTER_API_KEY not set - Zynex is running in DEMO MODE.\n"
+            "   Set the key in a .env file or environment variable for real AI responses.\n"
+        )
         else:
             masked = self.OPENROUTER_API_KEY[:6] + "..." + self.OPENROUTER_API_KEY[-4:]
-            print(f"\n✅  OpenRouter API key detected: {masked}")
+            print(f"\nOpenRouter API key detected: {masked}")
             print(f"   Default model: {self.DEFAULT_MODEL}\n")
 
 

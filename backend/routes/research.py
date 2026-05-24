@@ -5,8 +5,10 @@ import tempfile
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from backend.models.schemas import ResearchRequest, JobStatus, ProgressUpdate
 from backend.agents.query_planner import plan_research
@@ -15,8 +17,10 @@ from backend.agents.source_analyzer import analyze_sources
 from backend.agents.report_composer import compose_report
 from backend.agents.chart_generator import generate_charts
 from backend.agents.export_engine import generate_pdf, generate_slides
+from backend.utils.sanitize import sanitize_topic, sanitize_depth
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 # In-memory job storage
 jobs: dict[str, JobStatus] = {}
@@ -109,7 +113,12 @@ async def run_pipeline(job_id: str, topic: str, depth: str):
         await queue.put(ProgressUpdate(step=6, total_steps=6, stage="failed", message=f"Error: {str(e)}", progress=1.0))
 
 @router.post("/api/research")
+@limiter.limit("5/minute")
 async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
+    # Sanitize inputs to prevent prompt injection
+    topic = sanitize_topic(request.topic)
+    depth = sanitize_depth(request.depth)
+    
     job_id = str(uuid4())
     access_token = str(uuid4())
     jobs[job_id] = JobStatus(
@@ -124,9 +133,13 @@ async def start_research(request: ResearchRequest, background_tasks: BackgroundT
     return {"job_id": job_id, "access_token": access_token}
 
 @router.get("/api/research/{job_id}/status")
-async def stream_status(job_id: str):
+async def stream_status(job_id: str, token: str = None):
     if job_id not in job_queues:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
 
     async def event_stream():
         queue = job_queues[job_id]
@@ -147,10 +160,15 @@ async def stream_status(job_id: str):
     )
 
 @router.get("/api/research/{job_id}/poll")
-async def poll_job_status(job_id: str):
+async def poll_job_status(job_id: str, token: str = None):
     """JSON endpoint for polling job status (fallback when SSE fails)."""
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
+    
     job = jobs[job_id]
     return {
         "job_id": job_id,
@@ -159,18 +177,26 @@ async def poll_job_status(job_id: str):
     }
 
 @router.get("/api/research/{job_id}/report")
-async def get_report(job_id: str):
+async def get_report(job_id: str, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found or not completed")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
     
     report_dict = reports[job_id].model_dump()
     report_dict["charts_base64"] = chart_data.get(job_id, {})
     return report_dict
 
 @router.get("/api/research/{job_id}/export/pdf")
-async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks):
+async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
 
     pdf_bytes = await generate_pdf(reports[job_id], chart_data.get(job_id, {}))
 
@@ -184,9 +210,13 @@ async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks):
     return FileResponse(path, media_type="application/pdf", filename=f"Zynex_Report_{job_id[:8]}.pdf")
 
 @router.get("/api/research/{job_id}/export/slides")
-async def get_export_slides(job_id: str, background_tasks: BackgroundTasks):
+async def get_export_slides(job_id: str, background_tasks: BackgroundTasks, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
 
     html_content = await generate_slides(reports[job_id], chart_data.get(job_id, {}))
 

@@ -1,4 +1,8 @@
 import asyncio
+import logging
+import os
+import tempfile
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -19,6 +23,39 @@ jobs: dict[str, JobStatus] = {}
 job_queues: dict[str, asyncio.Queue] = {}
 reports: dict[str, dict] = {}
 chart_data: dict[str, dict] = {}
+job_tokens: dict[str, str] = {}
+
+# Job TTL configuration
+JOB_TTL_HOURS = 2
+
+logger = logging.getLogger(__name__)
+
+async def cleanup_old_jobs():
+    """Background task to clean up expired jobs every 30 minutes."""
+    while True:
+        await asyncio.sleep(1800)  # 30 minutes
+        now = datetime.now(timezone.utc)
+        expired = []
+        for job_id, job in list(jobs.items()):
+            if hasattr(job, 'created_at') and job.created_at:
+                try:
+                    created_dt = datetime.fromisoformat(job.created_at)
+                    age = now - created_dt
+                    if age > timedelta(hours=JOB_TTL_HOURS):
+                        expired.append(job_id)
+                except (ValueError, TypeError):
+                    # If created_at is invalid, consider it expired
+                    expired.append(job_id)
+
+        for job_id in expired:
+            jobs.pop(job_id, None)
+            job_queues.pop(job_id, None)
+            reports.pop(job_id, None)
+            chart_data.pop(job_id, None)
+            job_tokens.pop(job_id, None)
+
+        if expired:
+            logger.info("Cleaned up %d expired jobs", len(expired))
 
 async def run_pipeline(job_id: str, topic: str, depth: str):
     queue = job_queues[job_id]
@@ -74,17 +111,23 @@ async def run_pipeline(job_id: str, topic: str, depth: str):
 @router.post("/api/research")
 async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid4())
-    jobs[job_id] = JobStatus(job_id=job_id, status="pending")
+    access_token = str(uuid4())
+    jobs[job_id] = JobStatus(
+        job_id=job_id,
+        status="pending",
+        created_at=datetime.now(timezone.utc).isoformat()
+    )
     job_queues[job_id] = asyncio.Queue()
-    
+    job_tokens[job_id] = access_token
+
     background_tasks.add_task(run_pipeline, job_id, request.topic, request.depth)
-    return {"job_id": job_id}
+    return {"job_id": job_id, "access_token": access_token}
 
 @router.get("/api/research/{job_id}/status")
 async def stream_status(job_id: str):
     if job_id not in job_queues:
         raise HTTPException(status_code=404, detail="Job not found")
-        
+
     async def event_stream():
         queue = job_queues[job_id]
         while True:
@@ -92,7 +135,7 @@ async def stream_status(job_id: str):
             yield f"data: {update.model_dump_json()}\n\n"
             if update.stage in ("completed", "failed"):
                 break
-                
+
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
@@ -102,6 +145,18 @@ async def stream_status(job_id: str):
             "X-Accel-Buffering": "no",
         },
     )
+
+@router.get("/api/research/{job_id}/poll")
+async def poll_job_status(job_id: str):
+    """JSON endpoint for polling job status (fallback when SSE fails)."""
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job = jobs[job_id]
+    return {
+        "job_id": job_id,
+        "status": job.status,
+        "error": job.error,
+    }
 
 @router.get("/api/research/{job_id}/report")
 async def get_report(job_id: str):
@@ -113,35 +168,33 @@ async def get_report(job_id: str):
     return report_dict
 
 @router.get("/api/research/{job_id}/export/pdf")
-async def get_export_pdf(job_id: str):
+async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
-        
+
     pdf_bytes = await generate_pdf(reports[job_id], chart_data.get(job_id, {}))
-    
-    # Save to temp file
-    import os
-    import tempfile
-    
+
     fd, path = tempfile.mkstemp(suffix=".pdf")
     with os.fdopen(fd, 'wb') as f:
         f.write(pdf_bytes)
-        
+
+    # Schedule cleanup AFTER the file is served
+    background_tasks.add_task(os.unlink, path)
+
     return FileResponse(path, media_type="application/pdf", filename=f"Zynex_Report_{job_id[:8]}.pdf")
 
 @router.get("/api/research/{job_id}/export/slides")
-async def get_export_slides(job_id: str):
+async def get_export_slides(job_id: str, background_tasks: BackgroundTasks):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
-        
+
     html_content = await generate_slides(reports[job_id], chart_data.get(job_id, {}))
-    
-    # Save to temp file
-    import os
-    import tempfile
-    
+
     fd, path = tempfile.mkstemp(suffix=".html")
     with os.fdopen(fd, 'w', encoding='utf-8') as f:
         f.write(html_content)
-        
+
+    # Schedule cleanup AFTER the file is served
+    background_tasks.add_task(os.unlink, path)
+
     return FileResponse(path, media_type="text/html", filename=f"Zynex_Slides_{job_id[:8]}.html")

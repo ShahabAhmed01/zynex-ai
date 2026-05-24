@@ -148,12 +148,9 @@ async def compose_report(
         f"Available sources:\n{source_context}\n\n"
         "Use inline citations [1], [2], etc. Be concise and impactful."
     )
-    summary = await llm_client.generate_creative(
-        prompt=summary_prompt, system=_SYSTEM_PROMPT
-    )
 
     # ── Compose each section ──────────────────────────────────────────────
-    sections: list[ReportSection] = []
+    section_tasks = []
     for sec_def in outline:
         title = sec_def.get("title", "Section")
         description = sec_def.get("description", "")
@@ -165,9 +162,22 @@ async def compose_report(
             "Write 2-4 substantive paragraphs with inline citations [1], [2], etc. "
             "Be analytical and data-driven where possible."
         )
-        content = await llm_client.generate_creative(
-            prompt=section_prompt, system=_SYSTEM_PROMPT
+        section_tasks.append(
+            llm_client.generate_creative(prompt=section_prompt, system=_SYSTEM_PROMPT)
         )
+
+    # Parallelize summary and section generation
+    results = await asyncio.gather(
+        llm_client.generate_creative(prompt=summary_prompt, system=_SYSTEM_PROMPT),
+        *section_tasks
+    )
+    summary = results[0]
+    section_contents = results[1:]
+
+    sections: list[ReportSection] = []
+    for idx, sec_def in enumerate(outline):
+        title = sec_def.get("title", "Section")
+        content = section_contents[idx]
 
         # Attach relevant charts to sections
         section_charts: list[ChartData] = []
@@ -186,6 +196,11 @@ async def compose_report(
             )
         )
 
+    # Calculate word count
+    total_words = len(summary.split())
+    for section in sections:
+        total_words += len(section.content.split())
+
     report = ResearchReport(
         topic=topic,
         summary=summary,
@@ -193,6 +208,7 @@ async def compose_report(
         citations=citations,
         charts=charts,
         generated_at=datetime.now(timezone.utc).isoformat(),
+        word_count=total_words,
     )
 
     logger.info(

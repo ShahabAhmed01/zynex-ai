@@ -43,7 +43,7 @@ def _demo_response(prompt: str, system: str) -> str:
     """Return a plausible template response so the app works without an API key."""
     prompt_lower = prompt.lower()
 
-    # Query-planner prompts
+    # Query-planner prompts (JSON response - no marker to avoid parse errors)
     if "search queries" in prompt_lower or "research plan" in prompt_lower:
         return (
             '{"queries": ['
@@ -69,10 +69,10 @@ def _demo_response(prompt: str, system: str) -> str:
             '"Technological implications",'
             '"Social considerations",'
             '"Environmental factors"'
-            "]}" + _DEMO_MARKER
+            "]}"
         )
 
-    # Source-analysis prompts
+    # Source-analysis prompts (JSON response - no marker to avoid parse errors)
     if "summarize" in prompt_lower or "analyze" in prompt_lower or "extract" in prompt_lower:
         return (
             '{"summary": "This source provides valuable information about the research topic, '
@@ -87,10 +87,9 @@ def _demo_response(prompt: str, system: str) -> str:
             '"chart_data": {"chart_type": "bar", "title": "Key Metrics Overview", '
             '"labels": ["Growth", "Adoption", "Impact", "Innovation"], '
             '"values": [78, 65, 82, 71]}}'
-            + _DEMO_MARKER
         )
 
-    # Report-composition prompts
+    # Report-composition prompts (text response - add marker)
     if "compose" in prompt_lower or "report" in prompt_lower or "write" in prompt_lower:
         return (
             "This is a comprehensive analysis of the research topic. Based on multiple sources "
@@ -107,7 +106,7 @@ def _demo_response(prompt: str, system: str) -> str:
             + _DEMO_MARKER
         )
 
-    # Generic fallback
+    # Generic fallback (text response - add marker)
     return (
         "Based on the available research and data, this topic encompasses several important "
         "dimensions. Analysis of multiple sources reveals consistent patterns and significant "

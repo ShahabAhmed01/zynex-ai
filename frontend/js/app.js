@@ -240,18 +240,15 @@
   /* ── Polling Fallback ─────────────────────────── */
   async function pollStatus(jobId) {
     try {
-      const res = await fetch(`/api/research/${jobId}/status`, {
-        headers: { Accept: 'application/json' },
-      });
+      const res = await fetch(`/api/research/${jobId}/poll`);
       if (res.ok) {
         const data = await res.json();
-        if (data.status === 'completed' || data.stage === 'completed') {
+        if (data.status === 'completed') {
           loadReport(jobId);
-        } else if (data.status === 'failed' || data.stage === 'failed') {
-          showToast('Research failed', 'error');
+        } else if (data.status === 'failed') {
+          showToast('Research failed: ' + (data.error || 'Unknown error'), 'error');
           showSection('input');
         } else {
-          // Keep polling
           setTimeout(() => pollStatus(jobId), 3000);
         }
       }
@@ -382,7 +379,7 @@
 
   function renderReport(report) {
     // Title
-    dom.reportTitle.textContent = report.title || 'Research Report';
+    dom.reportTitle.textContent = report.topic || report.title || 'Research Report';
 
     // Meta
     const wordCount = report.word_count || '—';
@@ -492,6 +489,46 @@
 
     // Setup TOC scroll highlighting
     setupTocHighlighting();
+
+    // Render charts
+    renderCharts(report);
+  }
+
+  function renderCharts(report) {
+    const chartsBase64 = report.charts_base64 || {};
+    const chartTitles = Object.keys(chartsBase64);
+    if (chartTitles.length === 0) return;
+
+    let chartsHtml = '<div class="charts-grid">';
+    chartTitles.forEach(title => {
+      const b64 = chartsBase64[title];
+      chartsHtml += `
+        <figure class="report-chart-figure">
+          <img src="data:image/png;base64,${b64}"
+               alt="${escapeHtml(title)}"
+               class="report-chart-img"
+               loading="lazy">
+          <figcaption class="chart-caption">${escapeHtml(title)}</figcaption>
+        </figure>
+      `;
+    });
+    chartsHtml += '</div>';
+
+    // Insert after report content before citations
+    const chartsSection = document.createElement('div');
+    chartsSection.className = 'report-section report-section--charts';
+    chartsSection.id = 'section-charts';
+    chartsSection.innerHTML = `
+      <h3 class="report-section-title">
+        <span class="section-number">📊</span>
+        Data Visualizations
+      </h3>
+      <div class="report-section-body">${chartsHtml}</div>
+    `;
+    dom.reportContent.appendChild(chartsSection);
+
+    // Add to TOC
+    dom.tocNav.innerHTML += `<a href="#section-charts" class="toc-link">📊 Visualizations</a>`;
   }
 
   function animateReportSections() {
@@ -584,28 +621,36 @@
 
   function formatMarkdown(text) {
     if (!text) return '';
-    // Basic markdown-to-HTML conversion
-    let html = escapeHtml(text);
+    // Step 1: Extract and protect links before escaping
+    const links = [];
+    let processed = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+      const idx = links.length;
+      links.push({ text: linkText, url: url });
+      return `%%LINK_${idx}%%`;
+    });
 
-    // Bold **text**
+    // Step 2: Escape HTML in the remaining text
+    let html = escapeHtml(processed);
+
+    // Step 3: Restore links with safe HTML
+    links.forEach(({ text, url }, idx) => {
+      const safeText = escapeHtml(text);
+      const safeUrl = url.replace(/"/g, '%22');
+      html = html.replace(
+        `%%LINK_${idx}%%`,
+        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeText}</a>`
+      );
+    });
+
+    // Step 4: Apply remaining markdown (on escaped text, no URL breakage)
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // Italic *text*
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    // Inline code `code`
     html = html.replace(/`(.+?)`/g, '<code>$1</code>');
-    // Headers ### (only at start of line)
     html = html.replace(/^### (.+)$/gm, '<h5>$1</h5>');
     html = html.replace(/^## (.+)$/gm, '<h4>$1</h4>');
-    // Bullet points
     html = html.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-    // Numbered lists
-    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-    // Links [text](url)
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    // Paragraphs (double newlines)
     html = html.replace(/\n\n/g, '</p><p>');
-    // Single newlines to <br>
     html = html.replace(/\n/g, '<br>');
 
     return '<p>' + html + '</p>';

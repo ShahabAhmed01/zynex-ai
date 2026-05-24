@@ -6,6 +6,7 @@ and identify chartable data points.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -69,40 +70,46 @@ async def analyze_sources(
     Returns enriched source dicts with added keys: summary, key_facts, chart_data.
     """
     logger.info("Analyzing %d sources", len(sources))
-    analyzed: list[dict[str, Any]] = []
 
-    # Process sources in batches to avoid overwhelming the LLM
-    batch_size = 5
-    for i in range(0, len(sources), batch_size):
-        batch = sources[i: i + batch_size]
+    async def analyze_single(source: dict[str, Any]) -> dict[str, Any]:
+        title = source.get("title", "Untitled")
+        content = source.get("content", "")
 
-        for source in batch:
-            title = source.get("title", "Untitled")
-            content = source.get("content", "")
+        prompt = (
+            f"Analyze this source:\n"
+            f"Title: {title}\n"
+            f"Content: {content[:1500]}\n\n"
+            "Extract a summary, key facts, and any chartable data. Return ONLY valid JSON."
+        )
 
-            prompt = (
-                f"Analyze this source:\n"
-                f"Title: {title}\n"
-                f"Content: {content[:1500]}\n\n"
-                "Extract a summary, key facts, and any chartable data. Return ONLY valid JSON."
-            )
-
-            try:
-                raw = await llm_client.generate_analytical(prompt=prompt, system=_SYSTEM_PROMPT)
-                analysis = _parse_analysis(raw)
-                if analysis is None:
-                    analysis = _default_analysis(source)
-            except Exception as exc:
-                logger.error("Analysis failed for '%s': %s", title, exc)
+        try:
+            raw = await llm_client.generate_analytical(prompt=prompt, system=_SYSTEM_PROMPT)
+            analysis = _parse_analysis(raw)
+            if analysis is None:
                 analysis = _default_analysis(source)
+        except Exception as exc:
+            logger.error("Analysis failed for '%s': %s", title, exc)
+            analysis = _default_analysis(source)
 
-            enriched = {
-                **source,
-                "summary": analysis.get("summary", ""),
-                "key_facts": analysis.get("key_facts", []),
-                "chart_data": analysis.get("chart_data"),
-            }
-            analyzed.append(enriched)
+        return {
+            **source,
+            "summary": analysis.get("summary", ""),
+            "key_facts": analysis.get("key_facts", []),
+            "chart_data": analysis.get("chart_data"),
+        }
+
+    # Parallelize with semaphore to limit concurrent LLM calls
+    semaphore = asyncio.Semaphore(5)
+    tasks = []
+
+    async def limited_analyze(source: dict[str, Any]) -> dict[str, Any]:
+        async with semaphore:
+            return await analyze_single(source)
+
+    for source in sources:
+        tasks.append(limited_analyze(source))
+
+    analyzed = await asyncio.gather(*tasks)
 
     logger.info("Source analysis complete: %d sources analyzed", len(analyzed))
     return analyzed

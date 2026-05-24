@@ -54,6 +54,7 @@ class ResearchReport(BaseModel):
     citations: list[Citation]
     charts: list[ChartData]
     generated_at: str
+    word_count: int = 0
 
 
 # ── Progress / Job Tracking ──────────────────────────────────────────────────
@@ -76,3 +77,4 @@ class JobStatus(BaseModel):
     progress: ProgressUpdate | None = None
     report: ResearchReport | None = None
     error: str | None = None
+    created_at: str | None = None

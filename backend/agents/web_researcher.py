@@ -24,30 +24,18 @@ async def research_web(
     """
     logger.info("Starting web research with %d queries", len(queries))
 
+    results = await search_client.search_multiple(queries, max_results=max_results_per_query)
+
     all_sources: list[dict[str, Any]] = []
-    seen_urls: set[str] = set()
-
-    for idx, query in enumerate(queries, 1):
-        logger.info("Query %d/%d: %s", idx, len(queries), query)
-        try:
-            results = await search_client.search(query, max_results=max_results_per_query)
-        except Exception as exc:
-            logger.error("Search failed for query '%s': %s", query, exc)
-            results = []
-
-        for r in results:
-            url = r.get("url", "")
-            if not url or url in seen_urls:
-                continue
-            seen_urls.add(url)
-            all_sources.append(
-                {
-                    "title": r.get("title", "Untitled"),
-                    "url": url,
-                    "content": r.get("body", ""),
-                    "query": query,
-                }
-            )
+    for r in results:
+        all_sources.append(
+            {
+                "title": r.get("title", "Untitled"),
+                "url": r.get("url", ""),
+                "content": r.get("body", ""),
+                "query": "",  # search_multiple doesn't track which query produced each result
+            }
+        )
 
     logger.info("Web research complete: %d unique sources", len(all_sources))
     return all_sources

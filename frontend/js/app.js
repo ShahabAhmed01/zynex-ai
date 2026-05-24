@@ -20,7 +20,143 @@
       completed: 'completed',
     },
     currentStageIndex: -1,
+    currentReport: null,
+    currentAccessToken: null,
   };
+
+  /* ═══════════════════════════════════════════════════
+     Report History (localStorage)
+     ═══════════════════════════════════════════════════ */
+  const HISTORY_KEY = 'zynex_report_history';
+  const MAX_HISTORY = 5;
+
+  function getHistory() {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error('Failed to read history:', e);
+      return [];
+    }
+  }
+
+  function saveToHistory(report, accessToken) {
+    try {
+      const history = getHistory();
+      const entry = {
+        job_id: state.currentJobId,
+        topic: report.topic,
+        summary: report.summary,
+        word_count: report.word_count,
+        generated_at: report.generated_at,
+        access_token: accessToken,
+      };
+      
+      // Add to beginning, remove oldest if over limit
+      history.unshift(entry);
+      if (history.length > MAX_HISTORY) {
+        history.pop();
+      }
+      
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      renderHistory();
+    } catch (e) {
+      console.error('Failed to save to history:', e);
+    }
+  }
+
+  function renderHistory() {
+    const history = getHistory();
+    const container = $('#history-list');
+    if (!container) return;
+    
+    if (history.length === 0) {
+      container.innerHTML = '<p class="text-muted">No reports yet</p>';
+      return;
+    }
+    
+    container.innerHTML = history.map((item, idx) => `
+      <div class="history-item" data-idx="${idx}">
+        <div class="history-topic">${escapeHtml(item.topic)}</div>
+        <div class="history-meta">
+          <span>${item.word_count} words</span>
+          <span>•</span>
+          <span>${new Date(item.generated_at).toLocaleDateString()}</span>
+        </div>
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    $$('.history-item').forEach(el => {
+      el.addEventListener('click', () => loadFromHistory(parseInt(el.dataset.idx)));
+    });
+  }
+
+  function loadFromHistory(idx) {
+    const history = getHistory();
+    const item = history[idx];
+    if (!item) return;
+    
+    state.currentJobId = item.job_id;
+    state.currentAccessToken = item.access_token;
+    
+    // Load report from server
+    fetch(`/api/research/${item.job_id}/report?token=${item.access_token}`)
+      .then(res => res.json())
+      .then(report => {
+        state.currentReport = report;
+        renderReport(report);
+        showSection('report');
+      })
+      .catch(err => {
+        showToast('Failed to load report from history', 'error');
+        console.error(err);
+      });
+  }
+
+  function generateShareUrl() {
+    if (!state.currentJobId || !state.currentAccessToken) {
+      showToast('No report to share', 'error');
+      return;
+    }
+    
+    const url = `${window.location.origin}?job_id=${state.currentJobId}&token=${state.currentAccessToken}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('Share URL copied to clipboard!', 'success');
+    }).catch(() => {
+      // Fallback: show in alert
+      prompt('Copy this share URL:', url);
+    });
+  }
+
+  function loadFromUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get('job_id');
+    const token = params.get('token');
+    
+    if (jobId && token) {
+      state.currentJobId = jobId;
+      state.currentAccessToken = token;
+      
+      // Load report from server
+      fetch(`/api/research/${jobId}/report?token=${token}`)
+        .then(res => res.json())
+        .then(report => {
+          state.currentReport = report;
+          renderReport(report);
+          showSection('report');
+          // Clear URL params
+          window.history.replaceState({}, '', window.location.pathname);
+        })
+        .catch(err => {
+          showToast('Failed to load shared report', 'error');
+          console.error(err);
+          showSection('input');
+        });
+    }
+  }
 
   /* ═══════════════════════════════════════════════════
      DOM References
@@ -46,6 +182,7 @@
     reportContent: $('#report-content'),
     reportCitations: $('#citations-list'),
     tocNav: $('#toc-nav'),
+    shareBtn: $('#share-btn'),
     exportPdfBtn: $('#export-pdf-btn'),
     exportSlidesBtn: $('#export-slides-btn'),
     newResearchBtn: $('#new-research-btn'),
@@ -159,6 +296,7 @@
 
       const data = await res.json();
       state.currentJobId = data.job_id;
+      state.currentAccessToken = data.access_token;
 
       // Transition to progress
       showSection('progress');
@@ -492,6 +630,9 @@
 
     // Render charts
     renderCharts(report);
+
+    // Save to history
+    saveToHistory(report, state.currentAccessToken);
   }
 
   function renderCharts(report) {
@@ -793,6 +934,7 @@
     });
 
     // Export buttons
+    dom.shareBtn.addEventListener('click', generateShareUrl);
     dom.exportPdfBtn.addEventListener('click', exportPDF);
     dom.exportSlidesBtn.addEventListener('click', exportSlides);
 
@@ -809,6 +951,12 @@
     setupKeyboardShortcuts();
     setupInputEffects();
     setupFeatureCards();
+
+    // Load report history
+    renderHistory();
+
+    // Load shared report from URL params
+    loadFromUrlParams();
 
     // Play entrance animations after a brief delay
     requestAnimationFrame(() => {

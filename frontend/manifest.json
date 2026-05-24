@@ -1,0 +1,18 @@
+{
+  "name": "Zynex - AI Research Agent",
+  "short_name": "Zynex",
+  "description": "AI-Powered Research. Instant Reports. Enter a topic and Zynex autonomously researches, analyzes, and generates comprehensive reports.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

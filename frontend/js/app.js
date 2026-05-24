@@ -158,6 +158,28 @@
     }
   }
 
+  function checkDemoMode() {
+    // Check if the backend is in demo mode by making a test request
+    // If it returns demo responses, show the banner
+    fetch('/api/health')
+      .then(res => res.json())
+      .then(data => {
+        if (data.demo_mode === true) {
+          const banner = $('#demo-banner');
+          if (banner) {
+            banner.style.display = 'flex';
+          }
+        }
+      })
+      .catch(() => {
+        // If health check fails, assume demo mode
+        const banner = $('#demo-banner');
+        if (banner) {
+          banner.style.display = 'flex';
+        }
+      });
+  }
+
   /* ═══════════════════════════════════════════════════
      DOM References
      ═══════════════════════════════════════════════════ */
@@ -185,6 +207,7 @@
     shareBtn: $('#share-btn'),
     exportPdfBtn: $('#export-pdf-btn'),
     exportSlidesBtn: $('#export-slides-btn'),
+    exportDocxBtn: $('#export-docx-btn'),
     newResearchBtn: $('#new-research-btn'),
     toastContainer: $('#toast-container'),
   };
@@ -384,8 +407,7 @@
         if (data.status === 'completed') {
           loadReport(jobId);
         } else if (data.status === 'failed') {
-          showToast('Research failed: ' + (data.error || 'Unknown error'), 'error');
-          showSection('input');
+          showErrorPage(data.error || 'Unknown error');
         } else {
           setTimeout(() => pollStatus(jobId), 3000);
         }
@@ -394,6 +416,25 @@
       console.error('Poll failed:', e);
       setTimeout(() => pollStatus(jobId), 5000);
     }
+  }
+
+  function showErrorPage(errorMessage) {
+    const errorSection = $('#error-section');
+    if (!errorSection) {
+      // Create error section if it doesn't exist
+      const errorHtml = `
+        <section id="error-section" class="section">
+          <div class="error-container glass">
+            <div class="error-icon">❌</div>
+            <h2 class="error-title">Research Failed</h2>
+            <p class="error-message">${escapeHtml(errorMessage)}</p>
+            <button onclick="location.reload()" class="btn-primary">Try Again</button>
+          </div>
+        </section>
+      `;
+      document.getElementById('app').insertAdjacentHTML('beforeend', errorHtml);
+    }
+    showSection('error-section');
   }
 
   /* ═══════════════════════════════════════════════════
@@ -641,17 +682,32 @@
     if (chartTitles.length === 0) return;
 
     let chartsHtml = '<div class="charts-grid">';
-    chartTitles.forEach(title => {
+    chartTitles.forEach((title, idx) => {
       const b64 = chartsBase64[title];
+      const canvasId = `chart-${idx}`;
       chartsHtml += `
         <figure class="report-chart-figure">
-          <img src="data:image/png;base64,${b64}"
-               alt="${escapeHtml(title)}"
-               class="report-chart-img"
-               loading="lazy">
+          <canvas id="${canvasId}" class="report-chart-canvas"></canvas>
           <figcaption class="chart-caption">${escapeHtml(title)}</figcaption>
         </figure>
       `;
+      
+      // Render Chart.js chart after DOM is updated
+      setTimeout(() => {
+        const canvas = document.getElementById(canvasId);
+        if (canvas && Chart) {
+          // Parse chart data from the base64 image (for now, use the image as fallback)
+          // In a full implementation, we'd need the backend to return structured chart data
+          const img = new Image();
+          img.onload = () => {
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+          };
+          img.src = `data:image/png;base64,${b64}`;
+        }
+      }, 100);
     });
     chartsHtml += '</div>';
 
@@ -735,6 +791,15 @@
     }
     showToast('Generating slides...', 'info');
     window.open(`/api/research/${state.currentJobId}/export/slides`, '_blank');
+  }
+
+  function exportDOCX() {
+    if (!state.currentJobId) {
+      showToast('No report available to export', 'warning');
+      return;
+    }
+    showToast('Generating DOCX...', 'info');
+    window.open(`/api/research/${state.currentJobId}/export/docx?token=${state.currentAccessToken}`, '_blank');
   }
 
   function newResearch() {
@@ -937,9 +1002,18 @@
     dom.shareBtn.addEventListener('click', generateShareUrl);
     dom.exportPdfBtn.addEventListener('click', exportPDF);
     dom.exportSlidesBtn.addEventListener('click', exportSlides);
+    dom.exportDocxBtn.addEventListener('click', exportDOCX);
 
     // New research
     dom.newResearchBtn.addEventListener('click', newResearch);
+
+    // Demo banner close
+    const closeDemoBanner = $('#close-demo-banner');
+    if (closeDemoBanner) {
+      closeDemoBanner.addEventListener('click', () => {
+        $('#demo-banner').style.display = 'none';
+      });
+    }
   }
 
   /* ═══════════════════════════════════════════════════
@@ -957,6 +1031,9 @@
 
     // Load shared report from URL params
     loadFromUrlParams();
+
+    // Check for demo mode
+    checkDemoMode();
 
     // Play entrance animations after a brief delay
     requestAnimationFrame(() => {

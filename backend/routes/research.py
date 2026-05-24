@@ -16,7 +16,7 @@ from backend.agents.web_researcher import research_web
 from backend.agents.source_analyzer import analyze_sources
 from backend.agents.report_composer import compose_report
 from backend.agents.chart_generator import generate_charts
-from backend.agents.export_engine import generate_pdf, generate_slides
+from backend.agents.export_engine import generate_pdf, generate_slides, generate_docx
 from backend.utils.sanitize import sanitize_topic, sanitize_depth
 
 router = APIRouter()
@@ -228,3 +228,23 @@ async def get_export_slides(job_id: str, background_tasks: BackgroundTasks, toke
     background_tasks.add_task(os.unlink, path)
 
     return FileResponse(path, media_type="text/html", filename=f"Zynex_Slides_{job_id[:8]}.html")
+
+@router.get("/api/research/{job_id}/export/docx")
+async def get_export_docx(job_id: str, background_tasks: BackgroundTasks, token: str = None):
+    if job_id not in reports:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Validate access token
+    if token != job_tokens.get(job_id):
+        raise HTTPException(status_code=403, detail="Invalid access token")
+
+    docx_bytes = await generate_docx(reports[job_id], chart_data.get(job_id, {}))
+
+    fd, path = tempfile.mkstemp(suffix=".docx")
+    with os.fdopen(fd, 'wb') as f:
+        f.write(docx_bytes)
+
+    # Schedule cleanup AFTER the file is served
+    background_tasks.add_task(os.unlink, path)
+
+    return FileResponse(path, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", filename=f"Zynex_Report_{job_id[:8]}.docx")

@@ -1,6 +1,6 @@
 """
 Zynex Export Engine
-Generates PDF reports and HTML slide decks from ResearchReport + chart images.
+Generates PDF reports, HTML slide decks, and DOCX documents from ResearchReport + chart images.
 """
 
 from __future__ import annotations
@@ -8,8 +8,12 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any
+from io import BytesIO
 
 from jinja2 import Environment, FileSystemLoader
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from backend.config import settings
 from backend.models.schemas import ResearchReport
@@ -89,3 +93,55 @@ async def generate_slides(
     html_content = _render_template("slides.html", report, charts)
     logger.info("Slides generated successfully")
     return html_content
+
+
+async def generate_docx(
+    report: ResearchReport,
+    charts: dict[str, str],
+) -> bytes:
+    """
+    Generate a DOCX document from the report.
+
+    Returns DOCX file as bytes.
+    """
+    logger.info("Generating DOCX for '%s'", report.topic)
+
+    doc = Document()
+    
+    # Title
+    title = doc.add_heading(report.topic, 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Metadata
+    doc.add_paragraph(f"Generated: {report.generated_at}")
+    doc.add_paragraph(f"Word Count: {report.word_count}")
+    doc.add_paragraph()
+    
+    # Summary
+    if report.summary:
+        doc.add_heading("Executive Summary", level=1)
+        doc.add_paragraph(report.summary)
+        doc.add_paragraph()
+    
+    # Sections
+    for idx, section in enumerate(report.sections, 1):
+        doc.add_heading(section.title or f"Section {idx}", level=1)
+        doc.add_paragraph(section.content or section.body or "")
+        doc.add_paragraph()
+    
+    # Citations
+    if report.citations:
+        doc.add_heading("Sources", level=1)
+        for idx, citation in enumerate(report.citations, 1):
+            p = doc.add_paragraph(f"[{idx}] ", style="List Number")
+            p.add_run(citation.get("title", "Untitled")).bold = True
+            p.add_run(f"\n{citation.get('url', '')}")
+            doc.add_paragraph()
+    
+    # Save to BytesIO
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    
+    logger.info("DOCX generated successfully")
+    return buffer.getvalue()

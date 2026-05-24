@@ -143,11 +143,15 @@ async def stream_status(job_id: str, token: str = None):
 
     async def event_stream():
         queue = job_queues[job_id]
-        while True:
-            update = await queue.get()
-            yield f"data: {update.model_dump_json()}\n\n"
-            if update.stage in ("completed", "failed"):
-                break
+        try:
+            while True:
+                update = await queue.get()
+                yield f"data: {update.model_dump_json()}\n\n"
+                if update.stage in ("completed", "failed"):
+                    break
+        except asyncio.CancelledError:
+            logger.info(f"SSE stream cancelled for job {job_id}")
+            raise
 
     return StreamingResponse(
         event_stream(),

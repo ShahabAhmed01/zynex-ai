@@ -370,7 +370,7 @@
       state.eventSource = null;
     }
 
-    const source = new EventSource(`/api/research/${jobId}/status`);
+    const source = new EventSource(`/api/research/${jobId}/status?token=${state.currentAccessToken}`);
     state.eventSource = source;
 
     source.onmessage = function (event) {
@@ -413,7 +413,7 @@
   /* ── Polling Fallback ─────────────────────────── */
   async function pollStatus(jobId) {
     try {
-      const res = await fetch(`/api/research/${jobId}/poll`);
+      const res = await fetch(`/api/research/${jobId}/poll?token=${state.currentAccessToken}`);
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'completed') {

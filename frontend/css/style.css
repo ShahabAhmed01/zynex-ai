@@ -1,19 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --color-bg: #0A0A0F;
-    --color-surface: #111118;
-    --color-surface-2: #1A1A25;
-    --color-border: #2A2A3A;
-    --color-blue: #3B82F6;
-    --color-cyan: #06B6D4;
-    --color-violet: #8B5CF6;
-    --color-emerald: #10B981;
-    --color-red: #EF4444;
-    --color-amber: #F59E0B;
-    --color-text: #E2E8F0;
-    --color-muted: #94A3B8;
-    --color-white: #FAFAF9;
+    --color-bg: #0a0a0a;
+    --color-surface: #111111;
+    --color-surface-light: #1a1a1a;
+    --color-border: #2a2a2a;
+    --color-accent: #0066ff;
+    --color-accent-hover: #0052cc;
+    --color-success: #00cc66;
+    --color-error: #ff4444;
+    --color-warning: #ffaa00;
+    --color-text: #ffffff;
+    --color-muted: #888888;
+    --color-white: #ffffff;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --border-radius: 8px;
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -25,9 +28,11 @@
 body {
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-family);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
     overflow-x: hidden;
 }
 
@@ -141,11 +146,11 @@ h1 {
 }
 
 .glass {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(17, 17, 17, 0.8);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .input-card {
@@ -173,15 +178,15 @@ input[type="text"] {
 }
 
 input[type="text"]:focus {
-    border-color: var(--color-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-blue), var(--color-cyan));
+    background: var(--color-accent);
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0 30px;
     font-size: 1.1rem;
     font-weight: 600;
@@ -189,12 +194,12 @@ input[type="text"]:focus {
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .btn-primary:hover {
-    transform: scale(1.02);
-    box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
+    background: var(--color-accent-hover);
+    transform: translateY(-1px);
 }
 
 .depth-selector {

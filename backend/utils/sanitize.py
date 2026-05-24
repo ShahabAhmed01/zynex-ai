@@ -5,7 +5,6 @@ Prevents prompt injection and other security issues by sanitizing user input.
 
 import re
 import urllib.parse
-from typing import str as StrType
 
 
 def sanitize_topic(topic: str) -> str:

@@ -239,15 +239,15 @@
   /* ═══════════════════════════════════════════════════
      Toast Notifications
      ═══════════════════════════════════════════════════ */
-  function showToast(message, type = 'info', duration = 5000) {
+  function showToast(message, type = 'info', duration = 3000) {
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
 
     const icons = {
-      success: '✅',
-      error: '❌',
-      info: 'ℹ️',
-      warning: '⚠️',
+      success: '✓',
+      error: '✕',
+      info: 'i',
+      warning: '!',
     };
 
     toast.innerHTML = `
@@ -264,22 +264,34 @@
     });
 
     // Close button
-    toast.querySelector('.toast-close').addEventListener('click', () => removeToast(toast));
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      removeToast(toast);
+    });
 
     // Auto-dismiss
-    const timer = setTimeout(() => removeToast(toast), duration);
-    toast.addEventListener('mouseenter', () => clearTimeout(timer));
+    let timer = setTimeout(() => removeToast(toast), duration);
+    
+    // Pause timer on hover
+    toast.addEventListener('mouseenter', () => {
+      clearTimeout(timer);
+    });
+    
+    // Resume timer on leave
     toast.addEventListener('mouseleave', () => {
-      setTimeout(() => removeToast(toast), 2000);
+      timer = setTimeout(() => removeToast(toast), 1000);
     });
   }
 
   function removeToast(toast) {
     if (!toast || !toast.parentNode) return;
+    toast.classList.remove('toast--visible');
     toast.classList.add('toast--leaving');
-    toast.addEventListener('animationend', () => {
+    setTimeout(() => {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
-    });
+    }, 300);
   }
 
   /* ═══════════════════════════════════════════════════
@@ -1010,8 +1022,17 @@
     // Demo banner close
     const closeDemoBanner = $('#close-demo-banner');
     if (closeDemoBanner) {
-      closeDemoBanner.addEventListener('click', () => {
-        $('#demo-banner').style.display = 'none';
+      closeDemoBanner.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const banner = $('#demo-banner');
+        if (banner) {
+          banner.style.opacity = '0';
+          banner.style.transform = 'translateY(-20px)';
+          setTimeout(() => {
+            banner.style.display = 'none';
+          }, 300);
+        }
       });
     }
   }

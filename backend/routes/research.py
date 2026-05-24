@@ -114,10 +114,10 @@ async def run_pipeline(job_id: str, topic: str, depth: str):
 
 @router.post("/api/research")
 @limiter.limit("5/minute")
-async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
+async def start_research(request: Request, research_request: ResearchRequest, background_tasks: BackgroundTasks):
     # Sanitize inputs to prevent prompt injection
-    topic = sanitize_topic(request.topic)
-    depth = sanitize_depth(request.depth)
+    topic = sanitize_topic(research_request.topic)
+    depth = sanitize_depth(research_request.depth)
     
     job_id = str(uuid4())
     access_token = str(uuid4())
@@ -129,7 +129,7 @@ async def start_research(request: ResearchRequest, background_tasks: BackgroundT
     job_queues[job_id] = asyncio.Queue()
     job_tokens[job_id] = access_token
 
-    background_tasks.add_task(run_pipeline, job_id, request.topic, request.depth)
+    background_tasks.add_task(run_pipeline, job_id, research_request.topic, research_request.depth)
     return {"job_id": job_id, "access_token": access_token}
 
 @router.get("/api/research/{job_id}/status")

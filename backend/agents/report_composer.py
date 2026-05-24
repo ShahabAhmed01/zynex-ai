@@ -167,10 +167,14 @@ async def compose_report(
         )
 
     # Parallelize summary and section generation
-    results = await asyncio.gather(
-        llm_client.generate_creative(prompt=summary_prompt, system=_SYSTEM_PROMPT),
-        *section_tasks
-    )
+    try:
+        results = await asyncio.gather(
+            llm_client.generate_creative(prompt=summary_prompt, system=_SYSTEM_PROMPT),
+            *section_tasks
+        )
+    except Exception as e:
+        logger.error(f"Error generating report sections: {e}")
+        raise
     summary = results[0]
     section_contents = results[1:]
 

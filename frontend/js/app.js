@@ -1,1075 +1,408 @@
 /**
- * Zynex — Application Logic
- * Complete SPA controller: research flow, SSE progress, report rendering, exports, toasts.
+ * AIProjecTy — Frontend Application
+ * Streaming chat interface with conversation history
  */
-(function () {
-  'use strict';
 
-  /* ═══════════════════════════════════════════════════
-     State
-     ═══════════════════════════════════════════════════ */
-  const state = {
-    currentJobId: null,
-    currentSection: 'input',
-    eventSource: null,
-    progressStages: ['planning', 'researching', 'analyzing', 'composing', 'charting', 'completed'],
-    stageAliases: {
-      charts: 'charting',
-      charting: 'charting',
-      done: 'completed',
-      completed: 'completed',
-    },
-    currentStageIndex: -1,
-    currentReport: null,
-    currentAccessToken: null,
-  };
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  conversations: JSON.parse(localStorage.getItem('conversations') || '[]'),
+  currentId: null,
+  messages: [],
+  isStreaming: false,
+  controller: null,
+  sidebarOpen: window.innerWidth > 768,
+  models: ['GPT-4o', 'GPT-4o-mini', 'GPT-3.5-turbo'],
+  modelIndex: 0,
+};
 
-  /* ═══════════════════════════════════════════════════
-     Report History (localStorage)
-     ═══════════════════════════════════════════════════ */
-  const HISTORY_KEY = 'zynex_report_history';
-  const MAX_HISTORY = 5;
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const $chat       = document.getElementById('chat');
+const $welcome    = document.getElementById('welcome');
+const $messages   = document.getElementById('messages');
+const $input      = document.getElementById('input');
+const $sendBtn    = document.getElementById('send-btn');
+const $sidebar    = document.getElementById('sidebar');
+const $histList   = document.getElementById('history-list');
+const $headerTitle = document.getElementById('header-title');
+const $modelLabel  = document.getElementById('model-label');
+const $progressBar = document.getElementById('progress-bar');
 
-  function getHistory() {
-    try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error('Failed to read history:', e);
-      return [];
-    }
-  }
+// ── Init ───────────────────────────────────────────────────────────────────
+(function init() {
+  renderHistory();
+  updateSidebar();
 
-  function saveToHistory(report, accessToken) {
-    try {
-      const history = getHistory();
-      const entry = {
-        job_id: state.currentJobId,
-        topic: report.topic,
-        summary: report.summary,
-        word_count: report.word_count,
-        generated_at: report.generated_at,
-        access_token: accessToken,
-      };
-      
-      // Add to beginning, remove oldest if over limit
-      history.unshift(entry);
-      if (history.length > MAX_HISTORY) {
-        history.pop();
-      }
-      
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-      renderHistory();
-    } catch (e) {
-      console.error('Failed to save to history:', e);
-    }
-  }
+  // Auto-resize textarea
+  $input.addEventListener('input', () => {
+    $sendBtn.disabled = $input.value.trim() === '' || state.isStreaming;
+    $input.style.height = 'auto';
+    $input.style.height = Math.min($input.scrollHeight, 160) + 'px';
+  });
 
-  function renderHistory() {
-    const history = getHistory();
-    const container = $('#history-list');
-    if (!container) return;
-    
-    if (history.length === 0) {
-      container.innerHTML = '<p class="text-muted">No reports yet</p>';
-      return;
-    }
-    
-    container.innerHTML = history.map((item, idx) => `
-      <div class="history-item" data-idx="${idx}">
-        <div class="history-topic">${escapeHtml(item.topic)}</div>
-        <div class="history-meta">
-          <span>${item.word_count} words</span>
-          <span>•</span>
-          <span>${new Date(item.generated_at).toLocaleDateString()}</span>
-        </div>
-      </div>
-    `).join('');
-    
-    // Add click handlers
-    $$('.history-item').forEach(el => {
-      el.addEventListener('click', () => loadFromHistory(parseInt(el.dataset.idx)));
-    });
-  }
-
-  function loadFromHistory(idx) {
-    const history = getHistory();
-    const item = history[idx];
-    if (!item) return;
-    
-    state.currentJobId = item.job_id;
-    state.currentAccessToken = item.access_token;
-    
-    // Load report from server
-    fetch(`/api/research/${item.job_id}/report?token=${item.access_token}`)
-      .then(res => res.json())
-      .then(report => {
-        state.currentReport = report;
-        renderReport(report);
-        showSection('report');
-      })
-      .catch(err => {
-        showToast('Failed to load report from history', 'error');
-        console.error(err);
-      });
-  }
-
-  function generateShareUrl() {
-    if (!state.currentJobId || !state.currentAccessToken) {
-      showToast('No report to share', 'error');
-      return;
-    }
-    
-    const url = `${window.location.origin}?job_id=${state.currentJobId}&token=${state.currentAccessToken}`;
-    
-    // Copy to clipboard
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('Share URL copied to clipboard!', 'success');
-    }).catch(() => {
-      // Fallback: show in alert
-      prompt('Copy this share URL:', url);
-    });
-  }
-
-  function loadFromUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    const jobId = params.get('job_id');
-    const token = params.get('token');
-    
-    if (jobId && token) {
-      state.currentJobId = jobId;
-      state.currentAccessToken = token;
-      
-      // Load report from server
-      fetch(`/api/research/${jobId}/report?token=${token}`)
-        .then(res => res.json())
-        .then(report => {
-          state.currentReport = report;
-          renderReport(report);
-          showSection('report');
-          // Clear URL params
-          window.history.replaceState({}, '', window.location.pathname);
-        })
-        .catch(err => {
-          showToast('Failed to load shared report', 'error');
-          console.error(err);
-          showSection('input');
-        });
-    }
-  }
-
-  function checkDemoMode() {
-    // Check if the backend is in demo mode by making a test request
-    // If it returns demo responses, show the banner
-    fetch('/api/health')
-      .then(res => res.json())
-      .then(data => {
-        if (data.demo_mode === true) {
-          const banner = $('#demo-banner');
-          if (banner) {
-            banner.style.display = 'flex';
-          }
-        }
-      })
-      .catch(() => {
-        // If health check fails, assume demo mode
-        const banner = $('#demo-banner');
-        if (banner) {
-          banner.style.display = 'flex';
-        }
-      });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     DOM References
-     ═══════════════════════════════════════════════════ */
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
-
-  const dom = {
-    sections: {
-      input: $('#input-section'),
-      progress: $('#progress-section'),
-      report: $('#report-section'),
-    },
-    topicInput: $('#topic-input'),
-    researchBtn: $('#research-btn'),
-    progressTopic: $('#progress-topic'),
-    progressBar: $('#progress-bar'),
-    progressPercent: $('#progress-percent'),
-    progressSteps: $('#progress-steps'),
-    progressLog: $('#progress-log'),
-    reportTitle: $('#report-title'),
-    reportMeta: $('#report-meta'),
-    reportContent: $('#report-content'),
-    reportCitations: $('#citations-list'),
-    tocNav: $('#toc-nav'),
-    shareBtn: $('#share-btn'),
-    exportPdfBtn: $('#export-pdf-btn'),
-    exportSlidesBtn: $('#export-slides-btn'),
-    exportDocxBtn: $('#export-docx-btn'),
-    newResearchBtn: $('#new-research-btn'),
-    toastContainer: $('#toast-container'),
-  };
-
-  /* ═══════════════════════════════════════════════════
-     Section Switching (with animations)
-     ═══════════════════════════════════════════════════ */
-  function showSection(name) {
-    if (state.currentSection === name) return;
-
-    Object.entries(dom.sections).forEach(([key, el]) => {
-      if (key === name) {
-        el.classList.add('active');
-        el.classList.add('section--entering');
-        // Remove entering class after animation completes
-        setTimeout(() => el.classList.remove('section--entering'), 600);
-      } else {
-        el.classList.remove('active');
-        el.classList.remove('section--entering');
-      }
-    });
-
-    state.currentSection = name;
-
-    // Scroll to top smoothly
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Toast Notifications
-     ═══════════════════════════════════════════════════ */
-  function showToast(message, type = 'info', duration = 3000) {
-    const toast = document.createElement('div');
-    toast.className = `toast toast--${type}`;
-
-    const icons = {
-      success: '✓',
-      error: '✕',
-      info: 'i',
-      warning: '!',
-    };
-
-    toast.innerHTML = `
-      <span class="toast-icon">${icons[type] || icons.info}</span>
-      <span class="toast-message">${escapeHtml(message)}</span>
-      <button class="toast-close" aria-label="Close">&times;</button>
-    `;
-
-    dom.toastContainer.appendChild(toast);
-
-    // Trigger enter animation
-    requestAnimationFrame(() => {
-      toast.classList.add('toast--visible');
-    });
-
-    // Close button
-    const closeBtn = toast.querySelector('.toast-close');
-    closeBtn.addEventListener('click', (e) => {
+  // Send on Enter (Shift+Enter = newline)
+  $input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      e.stopPropagation();
-      removeToast(toast);
-    });
-
-    // Auto-dismiss
-    let timer = setTimeout(() => removeToast(toast), duration);
-    
-    // Pause timer on hover
-    toast.addEventListener('mouseenter', () => {
-      clearTimeout(timer);
-    });
-    
-    // Resume timer on leave
-    toast.addEventListener('mouseleave', () => {
-      timer = setTimeout(() => removeToast(toast), 1000);
-    });
-  }
-
-  function removeToast(toast) {
-    if (!toast || !toast.parentNode) return;
-    toast.classList.remove('toast--visible');
-    toast.classList.add('toast--leaving');
-    setTimeout(() => {
-      if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 300);
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Start Research
-     ═══════════════════════════════════════════════════ */
-  async function startResearch() {
-    const topic = dom.topicInput.value.trim();
-    if (!topic) {
-      showToast('Please enter a research topic', 'error');
-      dom.topicInput.focus();
-      dom.topicInput.classList.add('input-shake');
-      setTimeout(() => dom.topicInput.classList.remove('input-shake'), 500);
-      return;
+      if (!$sendBtn.disabled) send();
     }
+  });
 
-    if (topic.length < 3) {
-      showToast('Please enter a more descriptive topic (at least 3 characters)', 'error');
-      return;
-    }
-
-    const depth = document.querySelector('input[name="depth"]:checked')?.value || 'standard';
-
-    // Set button to loading state
-    setButtonLoading(true);
-
-    try {
-      const res = await fetch('/api/research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, depth }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || errData.message || `Server error (${res.status})`);
-      }
-
-      const data = await res.json();
-      state.currentJobId = data.job_id;
-      state.currentAccessToken = data.access_token;
-
-      // Transition to progress
-      showSection('progress');
-      dom.progressTopic.textContent = topic;
-      resetProgress();
-      connectProgress(data.job_id);
-
-      showToast('Research started! Zynex is working...', 'success');
-
-    } catch (err) {
-      console.error('Research start failed:', err);
-      showToast(`Failed to start research: ${err.message}`, 'error');
-    } finally {
-      setButtonLoading(false);
-    }
-  }
-
-  function setButtonLoading(loading) {
-    const btn = dom.researchBtn;
-    if (loading) {
-      btn.classList.add('btn--loading');
-      btn.disabled = true;
+  $sendBtn.addEventListener('click', () => {
+    if (state.isStreaming) {
+      stopStream();
     } else {
-      btn.classList.remove('btn--loading');
-      btn.disabled = false;
+      send();
     }
-  }
+  });
 
-  /* ═══════════════════════════════════════════════════
-     SSE Progress Connection
-     ═══════════════════════════════════════════════════ */
-  function connectProgress(jobId) {
-    // Close any existing connection
-    if (state.eventSource) {
-      state.eventSource.close();
-      state.eventSource = null;
-    }
-
-    const source = new EventSource(`/api/research/${jobId}/status?token=${state.currentAccessToken}`);
-    state.eventSource = source;
-
-    source.onmessage = function (event) {
-      try {
-        const update = JSON.parse(event.data);
-        updateProgressUI(update);
-
-        if (update.stage === 'completed' || update.status === 'completed') {
-          source.close();
-          state.eventSource = null;
-          addLogEntry('Research complete! Loading report...', 'success');
-          setTimeout(() => loadReport(jobId), 800);
-        }
-
-        if (update.stage === 'failed' || update.status === 'failed') {
-          source.close();
-          state.eventSource = null;
-          showToast('Research failed: ' + (update.message || 'Unknown error'), 'error');
-          addLogEntry('Research failed: ' + (update.message || 'Unknown error'), 'error');
-          setTimeout(() => showSection('input'), 2000);
-        }
-      } catch (e) {
-        console.error('Failed to parse SSE data:', e);
+  // Mobile: close sidebar on outside tap
+  document.addEventListener('click', e => {
+    if (window.innerWidth <= 768 && state.sidebarOpen) {
+      if (!$sidebar.contains(e.target) && e.target.id !== 'toggle-sidebar') {
+        toggleSidebar();
       }
-    };
-
-    source.onerror = function () {
-      console.warn('SSE connection error — retrying...');
-      // EventSource will auto-reconnect for non-fatal errors.
-      // If it permanently fails, we handle it gracefully.
-      if (source.readyState === EventSource.CLOSED) {
-        state.eventSource = null;
-        addLogEntry('Connection lost. Attempting to fetch status...', 'warning');
-        // Fallback: poll for status
-        pollStatus(jobId);
-      }
-    };
-  }
-
-  /* ── Polling Fallback ─────────────────────────── */
-  async function pollStatus(jobId) {
-    try {
-      const res = await fetch(`/api/research/${jobId}/poll?token=${state.currentAccessToken}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'completed') {
-          loadReport(jobId);
-        } else if (data.status === 'failed') {
-          showErrorPage(data.error || 'Unknown error');
-        } else {
-          setTimeout(() => pollStatus(jobId), 3000);
-        }
-      }
-    } catch (e) {
-      console.error('Poll failed:', e);
-      setTimeout(() => pollStatus(jobId), 5000);
     }
+  });
+})();
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  state.sidebarOpen = !state.sidebarOpen;
+  updateSidebar();
+}
+
+function updateSidebar() {
+  if (state.sidebarOpen) {
+    $sidebar.classList.remove('collapsed');
+    if (window.innerWidth <= 768) $sidebar.classList.add('open');
+  } else {
+    $sidebar.classList.add('collapsed');
+    $sidebar.classList.remove('open');
+  }
+}
+
+// ── Model cycling ──────────────────────────────────────────────────────────
+function cycleModel() {
+  state.modelIndex = (state.modelIndex + 1) % state.models.length;
+  $modelLabel.textContent = state.models[state.modelIndex];
+  showToast(`Switched to ${state.models[state.modelIndex]}`, 'success');
+}
+
+// ── Conversations ──────────────────────────────────────────────────────────
+function newChat() {
+  state.currentId = null;
+  state.messages = [];
+  $messages.innerHTML = '';
+  $messages.style.display = 'none';
+  $welcome.style.display = 'flex';
+  $headerTitle.textContent = 'New conversation';
+  $input.value = '';
+  $input.style.height = 'auto';
+  $sendBtn.disabled = true;
+  if (window.innerWidth <= 768 && state.sidebarOpen) toggleSidebar();
+}
+
+function clearChat() {
+  if (state.messages.length === 0) return;
+  if (!confirm('Clear this conversation?')) return;
+  newChat();
+}
+
+function loadConversation(id) {
+  const conv = state.conversations.find(c => c.id === id);
+  if (!conv) return;
+  state.currentId = id;
+  state.messages = [...conv.messages];
+  renderMessages();
+  $headerTitle.textContent = conv.title;
+  if (window.innerWidth <= 768 && state.sidebarOpen) toggleSidebar();
+}
+
+function saveConversation() {
+  const existing = state.conversations.findIndex(c => c.id === state.currentId);
+  const title = state.messages[0]?.content?.slice(0, 60) || 'New conversation';
+  const conv = {
+    id: state.currentId,
+    title,
+    messages: state.messages,
+    updatedAt: Date.now(),
+  };
+  if (existing >= 0) {
+    state.conversations[existing] = conv;
+  } else {
+    state.conversations.unshift(conv);
+  }
+  localStorage.setItem('conversations', JSON.stringify(state.conversations.slice(0, 50)));
+  renderHistory();
+}
+
+function renderHistory() {
+  $histList.innerHTML = '';
+  if (state.conversations.length === 0) {
+    $histList.innerHTML = '<div style="padding:10px 10px;font-size:13px;color:var(--text-mute)">No conversations yet</div>';
+    return;
+  }
+  state.conversations.forEach(conv => {
+    const el = document.createElement('div');
+    el.className = 'history-item' + (conv.id === state.currentId ? ' active' : '');
+    el.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      ${escHtml(conv.title)}
+    `;
+    el.title = conv.title;
+    el.addEventListener('click', () => loadConversation(conv.id));
+    $histList.appendChild(el);
+  });
+}
+
+// ── Suggestions ────────────────────────────────────────────────────────────
+function useSuggestion(text) {
+  $input.value = text;
+  $input.dispatchEvent(new Event('input'));
+  $input.focus();
+  send();
+}
+
+// ── Send / Stream ──────────────────────────────────────────────────────────
+async function send() {
+  const text = $input.value.trim();
+  if (!text || state.isStreaming) return;
+
+  // Init new conversation if needed
+  if (!state.currentId) {
+    state.currentId = 'conv_' + Date.now();
+    $welcome.style.display = 'none';
+    $messages.style.display = 'flex';
   }
 
-  function showErrorPage(errorMessage) {
-    const errorSection = $('#error-section');
-    if (!errorSection) {
-      // Create error section if it doesn't exist
-      const errorHtml = `
-        <section id="error-section" class="section">
-          <div class="error-container glass">
-            <div class="error-icon">❌</div>
-            <h2 class="error-title">Research Failed</h2>
-            <p class="error-message">${escapeHtml(errorMessage)}</p>
-            <button onclick="location.reload()" class="btn-primary">Try Again</button>
-          </div>
-        </section>
-      `;
-      document.getElementById('app').insertAdjacentHTML('beforeend', errorHtml);
-    }
-    showSection('error-section');
-  }
+  // Add user message
+  state.messages.push({ role: 'user', content: text });
+  appendMessage({ role: 'user', content: text });
+  $headerTitle.textContent = text.slice(0, 50);
 
-  /* ═══════════════════════════════════════════════════
-     Progress UI Updates
-     ═══════════════════════════════════════════════════ */
-  function resetProgress() {
-    state.currentStageIndex = -1;
+  // Reset input
+  $input.value = '';
+  $input.style.height = 'auto';
+  $sendBtn.disabled = true;
+  $input.focus();
 
-    // Reset progress bar
-    dom.progressBar.style.width = '0%';
-    dom.progressPercent.textContent = '0%';
+  // Scroll
+  scrollToBottom();
 
-    // Reset steps
-    $$('.step').forEach((step) => {
-      step.classList.remove('step--active', 'step--completed');
+  // Start streaming
+  setStreaming(true);
+  showProgress();
+
+  // Add AI message placeholder
+  const aiMsgEl = appendMessage({ role: 'ai', content: '' });
+  const bubble = aiMsgEl.querySelector('.message-bubble');
+  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+
+  state.controller = new AbortController();
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: state.messages,
+        model: state.models[state.modelIndex],
+        stream: true,
+      }),
+      signal: state.controller.signal,
     });
 
-    // Clear log
-    dom.progressLog.innerHTML = `
-      <div class="log-entry log-entry--system">
-        <span class="log-time">${getTimeStr()}</span>
-        <span class="log-msg">Initializing research pipeline...</span>
-      </div>
-    `;
-  }
-
-  function updateProgressUI(update) {
-    // Progress percentage
-    if (update.progress !== undefined) {
-      const raw = Number(update.progress);
-      const pct = Math.min(
-        Math.max(Math.round(raw <= 1 ? raw * 100 : raw), 0),
-        100
-      );
-      dom.progressBar.style.width = pct + '%';
-      dom.progressPercent.textContent = pct + '%';
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || err.message || `Server error ${response.status}`);
     }
 
-    // Stage update
-    if (update.stage) {
-      const stageName = (
-        state.stageAliases[update.stage.toLowerCase()] || update.stage.toLowerCase()
-      );
-      const stageIndex = state.progressStages.indexOf(stageName);
+    // Stream response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+    bubble.innerHTML = '';
 
-      if (stageIndex >= 0 && stageIndex > state.currentStageIndex) {
-        // Mark previous stages as completed
-        for (let i = 0; i <= stageIndex; i++) {
-          const stepEl = $(`.step[data-step="${state.progressStages[i]}"]`);
-          if (stepEl) {
-            if (i < stageIndex) {
-              stepEl.classList.add('step--completed');
-              stepEl.classList.remove('step--active');
-            } else {
-              stepEl.classList.add('step--active');
-              stepEl.classList.remove('step--completed');
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+
+      // Handle SSE format
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') break;
+          try {
+            const json = JSON.parse(data);
+            const delta = json.choices?.[0]?.delta?.content
+                       || json.content
+                       || json.text
+                       || '';
+            if (delta) {
+              fullContent += delta;
+              bubble.innerHTML = renderMarkdown(fullContent) + '<span class="stream-cursor"></span>';
+              scrollToBottom();
             }
+          } catch {
+            // Ignore parse errors on partial chunks
           }
         }
-        state.currentStageIndex = stageIndex;
       }
     }
 
-    // Log message
-    if (update.message) {
-      addLogEntry(update.message, update.type || 'info');
-    }
-  }
+    // Final render without cursor
+    bubble.innerHTML = renderMarkdown(fullContent);
+    state.messages.push({ role: 'assistant', content: fullContent });
+    saveConversation();
 
-  function addLogEntry(message, type = 'info') {
-    const entry = document.createElement('div');
-    entry.className = `log-entry log-entry--${type}`;
-
-    const typeIcons = {
-      info: '→',
-      success: '✓',
-      error: '✗',
-      warning: '⚠',
-      system: '●',
-    };
-
-    entry.innerHTML = `
-      <span class="log-time">${getTimeStr()}</span>
-      <span class="log-icon">${typeIcons[type] || '→'}</span>
-      <span class="log-msg">${escapeHtml(message)}</span>
-    `;
-
-    // Animate in
-    entry.style.opacity = '0';
-    entry.style.transform = 'translateX(-10px)';
-    dom.progressLog.appendChild(entry);
-
-    requestAnimationFrame(() => {
-      entry.style.transition = 'all 0.3s ease';
-      entry.style.opacity = '1';
-      entry.style.transform = 'translateX(0)';
-    });
-
-    // Auto-scroll
-    dom.progressLog.scrollTop = dom.progressLog.scrollHeight;
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Load & Render Report
-     ═══════════════════════════════════════════════════ */
-  async function loadReport(jobId) {
-    try {
-      const res = await fetch(`/api/research/${jobId}/report`);
-      if (!res.ok) throw new Error(`Failed to load report (${res.status})`);
-
-      const report = await res.json();
-      renderReport(report);
-      showSection('report');
-      showToast('Report ready!', 'success');
-
-    } catch (err) {
-      console.error('Load report failed:', err);
-      showToast('Failed to load report: ' + err.message, 'error');
-    }
-  }
-
-  function renderReport(report) {
-    // Title
-    dom.reportTitle.textContent = report.topic || report.title || 'Research Report';
-
-    // Meta
-    const wordCount = report.word_count || '—';
-    const sectionCount = report.sections?.length || 0;
-    const sourceCount = report.citations?.length || report.sources?.length || 0;
-    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    dom.reportMeta.textContent = `${date} • ${wordCount} words • ${sectionCount} sections • ${sourceCount} sources`;
-
-    // Build TOC
-    let tocHtml = '';
-    // Build content
-    let contentHtml = '';
-
-    // Summary section
-    if (report.summary || report.executive_summary) {
-      const summary = report.summary || report.executive_summary;
-      const summaryId = 'section-summary';
-      tocHtml += `<a href="#${summaryId}" class="toc-link toc-link--active">Executive Summary</a>`;
-      contentHtml += `
-        <div class="report-section report-section--summary" id="${summaryId}">
-          <h3 class="report-section-title">
-            <span class="section-number">01</span>
-            Executive Summary
-          </h3>
-          <div class="report-section-body">
-            ${formatMarkdown(summary)}
-          </div>
-        </div>
-      `;
-    }
-
-    // Main sections
-    if (report.sections && Array.isArray(report.sections)) {
-      report.sections.forEach((section, idx) => {
-        const sectionId = `section-${idx}`;
-        const num = String(idx + 2).padStart(2, '0');
-
-        tocHtml += `<a href="#${sectionId}" class="toc-link">${escapeHtml(section.title || `Section ${idx + 1}`)}</a>`;
-
-        let chartsHtml = '';
-        if (section.charts && Array.isArray(section.charts)) {
-          chartsHtml = section.charts.map((chart) => `
-            <figure class="report-chart">
-              <img src="${escapeHtml(chart.url || chart.path || chart)}" alt="${escapeHtml(chart.title || 'Chart')}" loading="lazy">
-              ${chart.title ? `<figcaption>${escapeHtml(chart.title)}</figcaption>` : ''}
-            </figure>
-          `).join('');
-        }
-
-        // If chart_url exists at section level
-        if (section.chart_url) {
-          chartsHtml += `
-            <figure class="report-chart">
-              <img src="${escapeHtml(section.chart_url)}" alt="Chart" loading="lazy">
-            </figure>
-          `;
-        }
-
-        contentHtml += `
-          <div class="report-section" id="${sectionId}">
-            <h3 class="report-section-title">
-              <span class="section-number">${num}</span>
-              ${escapeHtml(section.title || `Section ${idx + 1}`)}
-            </h3>
-            <div class="report-section-body">
-              ${formatMarkdown(section.content || section.body || '')}
-              ${chartsHtml}
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    dom.tocNav.innerHTML = tocHtml;
-    dom.reportContent.innerHTML = contentHtml;
-
-    // Citations
-    const citations = report.citations || report.sources || [];
-    if (citations.length > 0) {
-      let citationsHtml = '';
-      citations.forEach((cite, idx) => {
-        const title = cite.title || cite.name || cite.url || `Source ${idx + 1}`;
-        const url = cite.url || cite.link || '#';
-        const snippet = cite.snippet || cite.description || '';
-
-        citationsHtml += `
-          <div class="citation-item">
-            <span class="citation-num">[${idx + 1}]</span>
-            <div class="citation-body">
-              <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="citation-title">
-                ${escapeHtml(title)}
-              </a>
-              ${snippet ? `<p class="citation-snippet">${escapeHtml(snippet)}</p>` : ''}
-              <span class="citation-url">${escapeHtml(url)}</span>
-            </div>
-          </div>
-        `;
-      });
-      dom.reportCitations.innerHTML = citationsHtml;
-      $('#report-citations').style.display = 'block';
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      bubble.innerHTML = renderMarkdown(bubble.textContent.replace('▊', '') || '*Response stopped.*');
     } else {
-      $('#report-citations').style.display = 'none';
+      bubble.innerHTML = `<span style="color:#fca5a5">⚠ ${escHtml(err.message)}</span>`;
+      showToast(err.message, 'error');
     }
-
-    // Animate sections in sequentially
-    animateReportSections();
-
-    // Setup TOC scroll highlighting
-    setupTocHighlighting();
-
-    // Render charts
-    renderCharts(report);
-
-    // Save to history
-    saveToHistory(report, state.currentAccessToken);
-  }
-
-  function renderCharts(report) {
-    const chartsBase64 = report.charts_base64 || {};
-    const chartTitles = Object.keys(chartsBase64);
-    if (chartTitles.length === 0) return;
-
-    let chartsHtml = '<div class="charts-grid">';
-    chartTitles.forEach((title, idx) => {
-      const b64 = chartsBase64[title];
-      const canvasId = `chart-${idx}`;
-      chartsHtml += `
-        <figure class="report-chart-figure">
-          <canvas id="${canvasId}" class="report-chart-canvas"></canvas>
-          <figcaption class="chart-caption">${escapeHtml(title)}</figcaption>
-        </figure>
-      `;
-      
-      // Render Chart.js chart after DOM is updated
-      setTimeout(() => {
-        const canvas = document.getElementById(canvasId);
-        if (canvas && Chart) {
-          // Parse chart data from the base64 image (for now, use the image as fallback)
-          // In a full implementation, we'd need the backend to return structured chart data
-          const img = new Image();
-          img.onload = () => {
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-          };
-          img.src = `data:image/png;base64,${b64}`;
-        }
-      }, 100);
-    });
-    chartsHtml += '</div>';
-
-    // Insert after report content before citations
-    const chartsSection = document.createElement('div');
-    chartsSection.className = 'report-section report-section--charts';
-    chartsSection.id = 'section-charts';
-    chartsSection.innerHTML = `
-      <h3 class="report-section-title">
-        <span class="section-number">📊</span>
-        Data Visualizations
-      </h3>
-      <div class="report-section-body">${chartsHtml}</div>
-    `;
-    dom.reportContent.appendChild(chartsSection);
-
-    // Add to TOC
-    dom.tocNav.innerHTML += `<a href="#section-charts" class="toc-link">📊 Visualizations</a>`;
-  }
-
-  function animateReportSections() {
-    const sections = $$('.report-section');
-    sections.forEach((section, idx) => {
-      section.style.opacity = '0';
-      section.style.transform = 'translateY(20px)';
-      setTimeout(() => {
-        section.style.transition = 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
-        section.style.opacity = '1';
-        section.style.transform = 'translateY(0)';
-      }, 100 + idx * 120);
-    });
-  }
-
-  function setupTocHighlighting() {
-    const tocLinks = $$('.toc-link');
-    const sectionEls = $$('.report-section');
-
-    if (!sectionEls.length || !tocLinks.length) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          tocLinks.forEach((link) => {
-            link.classList.toggle('toc-link--active', link.getAttribute('href') === `#${id}`);
-          });
-        }
-      });
-    }, { rootMargin: '-20% 0px -70% 0px' });
-
-    sectionEls.forEach((section) => observer.observe(section));
-
-    // Click handling for smooth scroll
-    tocLinks.forEach((link) => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const target = document.querySelector(link.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Export Handlers
-     ═══════════════════════════════════════════════════ */
-  function exportPDF() {
-    if (!state.currentJobId) {
-      showToast('No report available to export', 'warning');
-      return;
-    }
-    showToast('Generating PDF...', 'info');
-    window.open(`/api/research/${state.currentJobId}/export/pdf`, '_blank');
-  }
-
-  function exportSlides() {
-    if (!state.currentJobId) {
-      showToast('No report available to export', 'warning');
-      return;
-    }
-    showToast('Generating slides...', 'info');
-    window.open(`/api/research/${state.currentJobId}/export/slides`, '_blank');
-  }
-
-  function exportDOCX() {
-    if (!state.currentJobId) {
-      showToast('No report available to export', 'warning');
-      return;
-    }
-    showToast('Generating DOCX...', 'info');
-    window.open(`/api/research/${state.currentJobId}/export/docx?token=${state.currentAccessToken}`, '_blank');
-  }
-
-  function newResearch() {
-    // Close any SSE connection
-    if (state.eventSource) {
-      state.eventSource.close();
-      state.eventSource = null;
-    }
-    state.currentJobId = null;
-    state.currentStageIndex = -1;
-    dom.topicInput.value = '';
-    showSection('input');
-    dom.topicInput.focus();
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Utility Functions
-     ═══════════════════════════════════════════════════ */
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function formatMarkdown(text) {
-    if (!text) return '';
-    // Step 1: Extract and protect links before escaping
-    const links = [];
-    let processed = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
-      const idx = links.length;
-      links.push({ text: linkText, url: url });
-      return `%%LINK_${idx}%%`;
-    });
-
-    // Step 2: Escape HTML in the remaining text
-    let html = escapeHtml(processed);
-
-    // Step 3: Restore links with safe HTML
-    links.forEach(({ text, url }, idx) => {
-      const safeText = escapeHtml(text);
-      const safeUrl = url.replace(/"/g, '%22');
-      html = html.replace(
-        `%%LINK_${idx}%%`,
-        `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeText}</a>`
-      );
-    });
-
-    // Step 4: Apply remaining markdown (on escaped text, no URL breakage)
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/`(.+?)`/g, '<code>$1</code>');
-    html = html.replace(/^### (.+)$/gm, '<h5>$1</h5>');
-    html = html.replace(/^## (.+)$/gm, '<h4>$1</h4>');
-    html = html.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = html.replace(/\n/g, '<br>');
-
-    return '<p>' + html + '</p>';
-  }
-
-  function getTimeStr() {
-    const now = new Date();
-    return now.toLocaleTimeString('en-US', {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Depth Selector Enhancement
-     ═══════════════════════════════════════════════════ */
-  function setupDepthSelector() {
-    const options = $$('.depth-option');
-    options.forEach((option) => {
-      const radio = option.querySelector('input[type="radio"]');
-      if (radio.checked) option.classList.add('active');
-
-      option.addEventListener('click', () => {
-        options.forEach((o) => o.classList.remove('active'));
-        option.classList.add('active');
-        radio.checked = true;
-      });
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Keyboard Shortcuts
-     ═══════════════════════════════════════════════════ */
-  function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-      // Ctrl/Cmd + Enter to start research
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && state.currentSection === 'input') {
-        e.preventDefault();
-        startResearch();
-      }
-      // Escape to go back to input
-      if (e.key === 'Escape' && state.currentSection === 'report') {
-        newResearch();
-      }
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Input Focus Effects
-     ═══════════════════════════════════════════════════ */
-  function setupInputEffects() {
-    const inputCard = $('.input-card');
-    const input = dom.topicInput;
-
-    input.addEventListener('focus', () => {
-      inputCard.classList.add('input-card--focused');
-    });
-
-    input.addEventListener('blur', () => {
-      inputCard.classList.remove('input-card--focused');
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Feature Card Hover Tilt Effect
-     ═══════════════════════════════════════════════════ */
-  function setupFeatureCards() {
-    const cards = $$('.feature-card');
-
-    cards.forEach((card) => {
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const rotateX = ((y - centerY) / centerY) * -4;
-        const rotateY = ((x - centerX) / centerX) * 4;
-
-        card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
-
-        // Move glow
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      });
-
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = '';
-      });
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Entrance Animations (on load)
-     ═══════════════════════════════════════════════════ */
-  function playEntranceAnimations() {
-    // Stagger feature cards
-    const cards = $$('.feature-card');
-    cards.forEach((card, idx) => {
-      card.style.opacity = '0';
-      card.style.transform = 'translateY(30px)';
-      setTimeout(() => {
-        card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-        card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-      }, 300 + idx * 100);
-    });
-
-    // Animate hero text
-    const heroTitle = $('.hero-title');
-    const heroSubtitle = $('.hero-subtitle');
-    const inputCard = $('.input-card');
-    const heroBadge = $('.hero-badge');
-
-    [heroBadge, heroTitle, heroSubtitle, inputCard].forEach((el, idx) => {
-      if (!el) return;
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(20px)';
-      setTimeout(() => {
-        el.style.transition = 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-      }, 100 + idx * 120);
-    });
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Event Listeners
-     ═══════════════════════════════════════════════════ */
-  function bindEvents() {
-    // Research button
-    dom.researchBtn.addEventListener('click', startResearch);
-
-    // Enter key on input
-    dom.topicInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') startResearch();
-    });
-
-    // Export buttons
-    dom.shareBtn.addEventListener('click', generateShareUrl);
-    dom.exportPdfBtn.addEventListener('click', exportPDF);
-    dom.exportSlidesBtn.addEventListener('click', exportSlides);
-    dom.exportDocxBtn.addEventListener('click', exportDOCX);
-
-    // New research
-    dom.newResearchBtn.addEventListener('click', newResearch);
-
-    // Demo banner close
-    const closeDemoBanner = $('#close-demo-banner');
-    if (closeDemoBanner) {
-      closeDemoBanner.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const banner = $('#demo-banner');
-        if (banner) {
-          banner.style.opacity = '0';
-          banner.style.transform = 'translateY(-20px)';
-          setTimeout(() => {
-            banner.style.display = 'none';
-          }, 300);
-        }
-      });
-    }
-  }
-
-  /* ═══════════════════════════════════════════════════
-     Initialization
-     ═══════════════════════════════════════════════════ */
-  function init() {
-    bindEvents();
-    setupDepthSelector();
-    setupKeyboardShortcuts();
-    setupInputEffects();
-    setupFeatureCards();
-
-    // Load report history
+  } finally {
+    hideProgress();
+    setStreaming(false);
     renderHistory();
-
-    // Load shared report from URL params
-    loadFromUrlParams();
-
-    // Check for demo mode
-    checkDemoMode();
-
-    // Play entrance animations after a brief delay
-    requestAnimationFrame(() => {
-      setTimeout(playEntranceAnimations, 100);
-    });
-
-    // Focus input
-    setTimeout(() => dom.topicInput.focus(), 800);
+    scrollToBottom();
   }
+}
 
-  // Run when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+function stopStream() {
+  state.controller?.abort();
+}
 
-})();
+function setStreaming(val) {
+  state.isStreaming = val;
+  $sendBtn.classList.toggle('loading', val);
+  $sendBtn.disabled = false;
+}
+
+// ── Progress bar ───────────────────────────────────────────────────────────
+let progressInterval = null;
+let progressVal = 0;
+
+function showProgress() {
+  $progressBar.classList.add('active');
+  progressVal = 0;
+  $progressBar.style.width = '0%';
+  progressInterval = setInterval(() => {
+    // Asymptotically approach 90%
+    progressVal += (90 - progressVal) * 0.06;
+    $progressBar.style.width = progressVal + '%';
+  }, 100);
+}
+
+function hideProgress() {
+  clearInterval(progressInterval);
+  $progressBar.style.width = '100%';
+  setTimeout(() => {
+    $progressBar.classList.remove('active');
+    $progressBar.style.width = '0%';
+  }, 400);
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+function appendMessage({ role, content }) {
+  const isUser = role === 'user';
+  const isAi   = role === 'ai' || role === 'assistant';
+
+  const wrap = document.createElement('div');
+  wrap.className = `message ${isUser ? 'user' : 'ai'}`;
+
+  wrap.innerHTML = `
+    <div class="message-inner">
+      <div class="message-meta">
+        <div class="message-avatar ${isUser ? 'user-avatar' : 'ai-avatar'}">
+          ${isUser ? '👤' : '✦'}
+        </div>
+        <span class="message-role">${isUser ? 'You' : 'AIProjecTy'}</span>
+      </div>
+      <div class="message-bubble">${isUser ? escHtml(content) : renderMarkdown(content)}</div>
+    </div>
+  `;
+
+  $messages.appendChild(wrap);
+  scrollToBottom();
+  return wrap;
+}
+
+function renderMessages() {
+  $messages.innerHTML = '';
+  $welcome.style.display = 'none';
+  $messages.style.display = 'flex';
+  state.messages.forEach(m => appendMessage({ role: m.role, content: m.content }));
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  $chat.scrollTop = $chat.scrollHeight;
+}
+
+// ── Simple Markdown renderer ───────────────────────────────────────────────
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = escHtml(text);
+
+  // Code blocks (``` ... ```)
+  html = html.replace(/\`\`\`(\w*)\n?([\s\S]*?)\`\`\`/g, (_, lang, code) => {
+    return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+  });
+
+  // Inline code
+  html = html.replace(/\`([^\n\`]+)\`/g, '<code>$1</code>');
+
+  // Bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+  // Headings
+  html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:600;margin:12px 0 4px;">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 style="font-size:17px;font-weight:600;margin:14px 0 6px;">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1 style="font-size:20px;font-weight:700;margin:16px 0 8px;">$1</h1>');
+
+  // Ordered list
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--text-mute);min-width:18px">$1.</span><span>$2</span></div>');
+
+  // Unordered list
+  html = html.replace(/^[-*] (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--accent2);min-width:12px">•</span><span>$1</span></div>');
+
+  // Horizontal rule
+  html = html.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  // Clean up double-brs after block elements
+  html = html.replace(/<\/pre><br>/g, '</pre>');
+  html = html.replace(/<\/h[1-3]><br>/g, '</h1>');
+
+  return html;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Toasts ─────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}

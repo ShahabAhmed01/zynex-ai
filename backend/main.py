@@ -62,14 +62,15 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(health.router)
-app.include_router(research.router)
+from backend.routes import chat, health
+app.include_router(chat.router, prefix="/api")
+app.include_router(health.router, prefix="/api")
 
-# Mount static files for frontend
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, "css")), name="css")
-app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
+# Serve frontend
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 
 @app.get("/")
-async def root():
-    return FileResponse(os.path.join(frontend_dir, "index.html"))
+async def serve_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

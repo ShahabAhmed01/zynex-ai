@@ -11,7 +11,7 @@ import sys
 from contextlib import asynccontextmanager
 from pythonjsonlogger import jsonlogger
 
-from backend.routes import health, research
+from backend.routes import auth, health, research
 from backend.middleware.request_id import RequestIDMiddleware
 from backend.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 
@@ -62,9 +62,11 @@ app.add_middleware(
 )
 
 # Include API routers
-from backend.routes import chat, health
+from backend.routes import chat  # noqa: E402
+
 app.include_router(chat.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 
 # Serve frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")

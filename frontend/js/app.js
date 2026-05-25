@@ -20,21 +20,26 @@ const state = {
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const $chat       = document.getElementById('chat');
-const $welcome    = document.getElementById('welcome');
-const $messages   = document.getElementById('messages');
-const $input      = document.getElementById('input');
-const $sendBtn    = document.getElementById('send-btn');
-const $sidebar    = document.getElementById('sidebar');
-const $histList   = document.getElementById('history-list');
+const $chat        = document.getElementById('chat');
+const $welcome     = document.getElementById('welcome');
+const $messages    = document.getElementById('messages');
+const $input       = document.getElementById('input');
+const $sendBtn     = document.getElementById('send-btn');
+const $sidebar     = document.getElementById('sidebar');
+const $histList    = document.getElementById('history-list');
 const $headerTitle = document.getElementById('header-title');
 const $modelLabel  = document.getElementById('model-label');
 const $progressBar = document.getElementById('progress-bar');
+const $setupBanner = document.getElementById('setup-banner');
+const $activateBtn = document.getElementById('activate-btn');
+const $setupSuccess = document.getElementById('setup-success');
 
 // ── Init ───────────────────────────────────────────────────────────────────
 (function init() {
   renderHistory();
   updateSidebar();
+  checkConfig();
+  handleOAuthCallback();
 
   // Auto-resize textarea
   $input.addEventListener('input', () => {
@@ -409,4 +414,102 @@ function showToast(message, type = 'info') {
   toast.textContent = message;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+// ── Zero-Config OAuth Flow ─────────────────────────────────────────────────
+
+async function checkConfig() {
+  try {
+    const resp = await fetch('/api/config');
+    if (!resp.ok) return;
+    const config = await resp.json();
+    if (config.demo_mode) {
+      $setupBanner.classList.add('visible');
+    }
+  } catch {
+    // Silently ignore — banner stays hidden
+  }
+}
+
+function activateAI() {
+  const btn = $activateBtn;
+  btn.disabled = true;
+  btn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;">
+      <path d="M21 12a9 9 0 11-6.219-8.56"/>
+    </svg>
+    Connecting…
+  `;
+
+  // Build callback URL pointing back to this page
+  const callbackUrl = encodeURIComponent(window.location.origin + '/?oauth=callback');
+
+  // Open OpenRouter auth in a popup
+  const authUrl = `https://openrouter.ai/auth?callback_url=${callbackUrl}`;
+  const popup = window.open(authUrl, 'openrouter_auth', 'width=600,height=700,left=200,top=100');
+
+  // Poll for popup close or message
+  const pollTimer = setInterval(() => {
+    if (popup && popup.closed) {
+      clearInterval(pollTimer);
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Activate Free AI
+      `;
+    }
+  }, 500);
+}
+
+async function handleOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return;
+
+  // Clean up URL
+  window.history.replaceState({}, document.title, '/');
+
+  // If opened as popup, send code to parent window
+  if (window.opener) {
+    try {
+      await exchangeCode(code);
+      window.opener.onOAuthSuccess();
+    } catch {
+      // ignore
+    }
+    window.close();
+    return;
+  }
+
+  // If redirected (not popup), exchange directly
+  await exchangeCode(code);
+  onOAuthSuccess();
+}
+
+async function exchangeCode(code) {
+  const resp = await fetch('/api/auth/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to activate');
+  }
+
+  return resp.json();
+}
+
+function onOAuthSuccess() {
+  // Hide the banner with a success animation
+  $activateBtn.style.display = 'none';
+  $setupSuccess.classList.add('visible');
+  showToast('Free AI activated! No costs, ever.', 'success');
+
+  setTimeout(() => {
+    $setupBanner.classList.remove('visible');
+  }, 2500);
 }

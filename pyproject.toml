@@ -50,6 +50,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.6",
     "pydantic>=2.5.0",
+    "httpx>=0.25.0",
+    "slowapi>=0.1.9",
+    "python-json-logger>=2.0.7",
 ]
 
 [project.optional-dependencies]

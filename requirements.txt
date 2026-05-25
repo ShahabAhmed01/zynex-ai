@@ -20,6 +20,9 @@ matplotlib>=3.8.0
 # Templating (PDF & slide reports)
 jinja2>=3.1.0
 
+# HTTP client (OAuth code exchange)
+httpx>=0.25.0
+
 # Environment variable loading
 python-dotenv>=1.0.0
 

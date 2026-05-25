@@ -11,7 +11,7 @@ from typing import Optional
 
 from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
 
-from backend.config import settings
+from backend.config import get_settings, settings
 
 logger = logging.getLogger("zynex.llm")
 
@@ -24,9 +24,10 @@ def _get_client() -> AsyncOpenAI:
     """Lazy-initialise the OpenAI-compatible async client for OpenRouter."""
     global _client
     if _client is None:
+        s = get_settings()
         _client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=settings.OPENROUTER_API_KEY or "demo-placeholder",
+            api_key=s.OPENROUTER_API_KEY or "demo-placeholder",
             timeout=60.0,
         )
     return _client

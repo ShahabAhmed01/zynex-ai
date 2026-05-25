@@ -691,6 +691,80 @@
       padding: 1px 5px;
       color: var(--text-dim);
     }
+
+    /* ── Setup Banner ── */
+    #setup-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(124,109,250,0.12), rgba(167,139,250,0.08));
+      border: 1px solid rgba(124,109,250,0.25);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 20px;
+      text-align: center;
+      animation: fadeSlideUp 0.35s ease forwards;
+    }
+    #setup-banner.visible { display: block; }
+    .setup-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .setup-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .setup-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 12px rgba(124,109,250,0.3);
+    }
+    .setup-btn:hover {
+      background: var(--accent2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(124,109,250,0.4);
+    }
+    .setup-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .setup-badge {
+      display: inline-block;
+      background: rgba(74,222,128,0.15);
+      border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      color: #86efac;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .setup-success {
+      display: none;
+      color: #86efac;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 0 4px;
+    }
+    .setup-success.visible { display: block; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -729,7 +803,7 @@
         </svg>
         Settings
       </div>
-      <div class="sidebar-footer-btn" onclick="showToast('API key managed in .env', 'info')">
+      <div class="sidebar-footer-btn" onclick="activateAI()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
         </svg>
@@ -740,6 +814,21 @@
 
   <!-- Main -->
   <main id="main">
+
+    <!-- Setup Banner (shown when no API key is configured) -->
+    <div id="setup-banner">
+      <div class="setup-title">Activate Free AI <span class="setup-badge">FREE</span></div>
+      <div class="setup-desc">
+        One click connects you to powerful AI models (Gemini, Llama, DeepSeek) — completely free, forever.
+      </div>
+      <button class="setup-btn" id="activate-btn" onclick="activateAI()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Activate Free AI
+      </button>
+      <div class="setup-success" id="setup-success">AI activated — you're all set!</div>
+    </div>
 
     <!-- Header -->
     <header id="header">

@@ -11,7 +11,11 @@ const state = {
   isStreaming: false,
   controller: null,
   sidebarOpen: window.innerWidth > 768,
-  models: ['GPT-4o', 'GPT-4o-mini', 'GPT-3.5-turbo'],
+  models: [
+    { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', label: 'Gemini 2.0 (Free)' },
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 (Free)' },
+    { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1 (Free)' }
+  ],
   modelIndex: 0,
 };
 
@@ -84,8 +88,8 @@ function updateSidebar() {
 // ── Model cycling ──────────────────────────────────────────────────────────
 function cycleModel() {
   state.modelIndex = (state.modelIndex + 1) % state.models.length;
-  $modelLabel.textContent = state.models[state.modelIndex];
-  showToast(`Switched to ${state.models[state.modelIndex]}`, 'success');
+  $modelLabel.textContent = state.models[state.modelIndex].label;
+  showToast(`Switched to ${state.models[state.modelIndex].label}`, 'success');
 }
 
 // ── Conversations ──────────────────────────────────────────────────────────
@@ -208,7 +212,7 @@ async function send() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        model: state.models[state.modelIndex],
+        model: state.models[state.modelIndex].id,
         stream: true,
       }),
       signal: state.controller.signal,

@@ -59,9 +59,9 @@ This flowchart outlines the macro-level relationships between the client, the AP
 flowchart TB
     %% Client Tier
     subgraph ClientLayer ["Client Tier (Browser)"]
-        UI[DOM Layout\n(index.html)]
-        JS[State & Logic\n(app.js)]
-        Storage[(localStorage)]
+        UI["DOM Layout<br>(index.html)"]
+        JS["State & Logic<br>(app.js)"]
+        Storage[localStorage]
         
         UI <-->|Event Listeners & DOM Updates| JS
         JS <-->|Serialize/Deserialize| Storage
@@ -69,8 +69,8 @@ flowchart TB
 
     %% Application Tier
     subgraph AppLayer ["Application Tier (FastAPI)"]
-        Router[Router\n(routes/chat.py)]
-        Service[OpenAI Service\n(services/openai_service.py)]
+        Router["Router<br>(routes/chat.py)"]
+        Service["OpenAI Service<br>(services/openai_service.py)"]
         Middleware[CORS & Middleware]
         
         Middleware --> Router

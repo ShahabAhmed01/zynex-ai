@@ -1,22 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 :root {
-    --color-bg: #0a0a0a;
-    --color-surface: #111111;
-    --color-surface-light: #1a1a1a;
-    --color-border: #2a2a2a;
-    --color-accent: #0066ff;
-    --color-accent-hover: #0052cc;
-    --color-success: #00cc66;
-    --color-error: #ff4444;
-    --color-warning: #ffaa00;
-    --color-text: #ffffff;
-    --color-muted: #888888;
+    --color-bg: #ffffff;
+    --color-surface: #f9fafb;
+    --color-surface-light: #f3f4f6;
+    --color-border: #e5e7eb;
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-warning: #f59e0b;
+    --color-text: #111827;
+    --color-muted: #6b7280;
     --color-white: #ffffff;
     
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --border-radius: 8px;
-    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: all 0.15s ease;
 }
 
 * {
@@ -29,11 +29,10 @@ body {
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-family);
-    line-height: 1.6;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    overflow-x: hidden;
 }
 
 #bg-canvas {
@@ -51,9 +50,9 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 5%;
-    background: rgba(10, 10, 15, 0.7);
-    backdrop-filter: blur(20px);
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;
@@ -61,12 +60,12 @@ header {
 }
 
 .logo {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--color-white);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .logo-icon {
@@ -93,11 +92,12 @@ nav a {
     color: var(--color-muted);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.3s ease;
+    font-size: 0.875rem;
+    transition: color 0.15s ease;
 }
 
 nav a:hover {
-    color: var(--color-white);
+    color: var(--color-text);
 }
 
 /* Common Layout */
@@ -126,11 +126,12 @@ section.active {
 }
 
 h1 {
-    font-size: 3.5rem;
-    font-weight: 800;
+    font-size: 2.5rem;
+    font-weight: 600;
     line-height: 1.2;
-    margin-bottom: 20px;
-    color: var(--color-white);
+    margin-bottom: 16px;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
 }
 
 .gradient-text {
@@ -140,9 +141,10 @@ h1 {
 }
 
 .subtitle {
-    font-size: 1.2rem;
+    font-size: 1.125rem;
     color: var(--color-muted);
-    margin-bottom: 40px;
+    margin-bottom: 48px;
+    max-width: 600px;
 }
 
 .glass {
@@ -154,8 +156,11 @@ h1 {
 }
 
 .input-card {
-    padding: 30px;
-    margin-bottom: 60px;
+    padding: 24px;
+    margin-bottom: 40px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
 }
 
 .input-wrapper {
@@ -166,20 +171,20 @@ h1 {
 
 input[type="text"] {
     flex: 1;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--color-white);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
-    padding: 15px 20px;
-    font-size: 1.1rem;
-    color: var(--color-white);
-    font-family: 'Inter', sans-serif;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 1rem;
+    color: var(--color-text);
+    font-family: var(--font-family);
     outline: none;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 input[type="text"]:focus {
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .btn-primary {
@@ -187,19 +192,18 @@ input[type="text"]:focus {
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     transition: var(--transition);
 }
 
 .btn-primary:hover {
     background: var(--color-accent-hover);
-    transform: translateY(-1px);
 }
 
 .depth-selector {

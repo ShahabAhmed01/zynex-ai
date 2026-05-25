@@ -83,10 +83,10 @@ flowchart TB
     end
 
     %% Connections
-    JS -->|HTTP POST JSON| Middleware
-    Service -->|HTTPS Asynchronous API Call| LLM
-    LLM -.->|Token Stream| Service
-    Service -.->|text/event-stream (SSE)| JS
+    JS -->|"HTTP POST JSON"| Middleware
+    Service -->|"HTTPS Asynchronous API Call"| LLM
+    LLM -.->|"Token Stream"| Service
+    Service -.->|"text/event-stream (SSE)"| JS
     
     %% Styling
     classDef client fill:#1e1e24,stroke:#7c6dfa,stroke-width:2px,color:#fff

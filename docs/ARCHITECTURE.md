@@ -1,7 +1,7 @@
 # Architecture Design
 
 ## Overview
-AIProjecTy is a lightweight, single-screen AI chat application. It's designed to be robust, self-hosted, and maintainable. The application leverages a backend written in Python using FastAPI, and a frontend built with pure HTML, CSS, and Vanilla JavaScript.
+Zynex is a lightweight, single-screen AI chat application. It's designed to be robust, self-hosted, and maintainable. The application leverages a backend written in Python using FastAPI, and a frontend built with pure HTML, CSS, and Vanilla JavaScript.
 
 ## Frontend
 The frontend follows a zero-dependency architecture. 

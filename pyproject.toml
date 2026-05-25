@@ -65,10 +65,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Shahabahmed01/zynex-ai"
-Repository = "https://github.com/Shahabahmed01/zynex-ai"
-Issues = "https://github.com/Shahabahmed01/zynex-ai/issues"
-Changelog = "https://github.com/Shahabahmed01/zynex-ai/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ShahabAhmed01/zynex-ai"
+Repository = "https://github.com/ShahabAhmed01/zynex-ai"
+Issues = "https://github.com/ShahabAhmed01/zynex-ai/issues"
+Changelog = "https://github.com/ShahabAhmed01/zynex-ai/blob/main/CHANGELOG.md"
 
 [project.scripts]
 zynex = "backend.main:start"

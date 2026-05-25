@@ -8,6 +8,6 @@
 # 2. Check the task.md progress tracker in the same directory
 # 3. Look at what files exist vs what's needed (the handoff doc has the full list)
 # 4. Continue building from where it stopped
-# 5. Project location: c:\Users\Shahab Ahmed\Documents\aiprojecty
-# 6. GitHub: Shahabahmed01/zynex-ai
+# 5. Project location: c:\Users\Shahab Ahmed\Documents\zynex-ai
+# 6. GitHub: ShahabAhmed01/zynex-ai
 # 7. Owner: Shahab Ahmed

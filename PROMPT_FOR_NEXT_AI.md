@@ -11,8 +11,8 @@ Just copy and paste the following prompt to the new AI:
 ```
 I am upgrading the Zynex AI Research Agent from v1.0 to v2.0. The current AI session was interrupted mid-task.
 
-PROJECT LOCATION: c:\Users\Shahab Ahmed\Documents\aiprojecty
-GITHUB: Shahabahmed01/zynex-ai
+PROJECT LOCATION: c:\Users\Shahab Ahmed\Documents\zynex-ai
+GITHUB: ShahabAhmed01/zynex-ai
 HANDOFF DOCUMENT: C:\Users\Shahab Ahmed\.gemini\antigravity\brain\aa6c9090-d69f-4342-a882-c8a1e5b28dc3\AI_HANDOFF_DOCUMENT.md
 
 COMPLETED:

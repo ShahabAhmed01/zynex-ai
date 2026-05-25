@@ -68,7 +68,7 @@ Ready to write some code? Here's how to get started:
 
 ```bash
 # 1. Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/zynex-ai.git
+git clone https://github.com/ShahabAhmed01/zynex-ai.git
 cd zynex-ai
 
 # 2. Create a virtual environment
@@ -171,7 +171,7 @@ mypy backend/
 
 ## 🌟 Community
 
-- **Questions?** Open a [Discussion](https://github.com/Shahabahmed01/zynex-ai/discussions)
+- **Questions?** Open a [Discussion](https://github.com/ShahabAhmed01/zynex-ai/discussions)
 - **Found a security issue?** See [SECURITY.md](SECURITY.md) for responsible disclosure
 
 ---

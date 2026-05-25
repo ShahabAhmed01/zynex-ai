@@ -1,11 +1,11 @@
-# AIProjecTy
+# Zynex
 
 <p align="center">
   <strong>Intelligent conversational AI interface</strong> — A production-grade web application providing a seamless, single-screen chat experience powered by OpenAI's language models, built with a FastAPI backend and a zero-dependency vanilla frontend.
 </p>
 
 <p align="center">
-  <a href="https://github.com/ShahabAhmed01/aiprojecty/actions"><img src="https://img.shields.io/github/actions/workflow/status/ShahabAhmed01/aiprojecty/ci.yml?branch=main&label=CI&style=flat-square" alt="CI" /></a>
+  <a href="https://github.com/ShahabAhmed01/zynex-ai/actions"><img src="https://img.shields.io/github/actions/workflow/status/ShahabAhmed01/zynex-ai/ci.yml?branch=main&label=CI&style=flat-square" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" /></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" /></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
@@ -27,11 +27,11 @@
 
 ## Overview
 
-**AIProjecTy** is a highly optimized, self-hostable AI chat application that delivers a ChatGPT-like experience. It features real-time Server-Sent Events (SSE) streaming, persistent conversational state management, and a zero-dependency, ultra-lightweight DOM-manipulating frontend.
+**Zynex** is a highly optimized, self-hostable AI chat application that delivers a ChatGPT-like experience. It features real-time Server-Sent Events (SSE) streaming, persistent conversational state management, and a zero-dependency, ultra-lightweight DOM-manipulating frontend.
 
 The system is decoupled into two cleanly separated layers:
 1. **Frontend**: Pure Vanilla HTML/CSS/JS ensuring microsecond interaction times without the overhead of Virtual DOM diffing.
-2. **Backend**: An asynchronous Python API utilizing `FastAPI` and the `OpenAI` python client for robust connection handling and parallelized non-blocking I/O.
+2. **Backend**: An asynchronous Python API utilizing `FastAPI` and the `OpenAI` python client (via OpenRouter) for robust connection handling and parallelized non-blocking I/O.
 
 ---
 
@@ -41,7 +41,7 @@ The system is decoupled into two cleanly separated layers:
 |------------|-------------|
 | **Asynchronous SSE Streaming** | Response streaming via HTTP/1.1 Server-Sent Events, achieving token-by-token rendering with latency measured in milliseconds. |
 | **State Persistence** | Client-side memory via `localStorage`, persisting conversation chains across sessions instantly. |
-| **Multi-Model Orchestration** | Dynamic swapping between `GPT-4o`, `GPT-4o-mini`, and `GPT-3.5-turbo` injected directly into the API payload. |
+| **Multi-Model Orchestration** | Dynamic swapping between free models via OpenRouter: `Gemini 2.0 Flash`, `Llama 3.3 70B`, and `DeepSeek R1`. |
 | **Markdown Compilation** | Custom regular-expression based markdown renderer handling code blocks, inline styling, and structured lists on the fly. |
 | **Single-Page Application (SPA)** | Entire experience is locked into a `100vh` single viewport to prevent unnecessary reflows and navigation events. |
 
@@ -79,7 +79,7 @@ flowchart TB
 
     %% External Tier
     subgraph ExtLayer ["External Services"]
-        LLM[OpenAI Inference API]
+        LLM[OpenRouter API]
     end
 
     %% Connections
@@ -108,7 +108,7 @@ sequenceDiagram
     actor User
     participant App as app.js (Frontend)
     participant FastAPI as Chat Router (Backend)
-    participant OpenAI as OpenAI API
+    participant OpenAI as OpenRouter API
 
     User->>App: Submits Prompt (Enter key)
     App->>App: Update local state & Render placeholder
@@ -117,20 +117,20 @@ sequenceDiagram
     App->>FastAPI: POST /api/chat (Messages Array)
     activate FastAPI
     
-    FastAPI->>OpenAI: AsyncOpenAI.chat.completions.create(stream=True)
-    activate OpenAI
+    FastAPI->>OpenRouter: AsyncOpenAI.chat.completions.create(stream=True)
+    activate OpenRouter
     
-    OpenAI-->>FastAPI: Yield HTTP Response Stream
+    OpenRouter-->>FastAPI: Yield HTTP Response Stream
     
     loop Every Token
-        OpenAI-->>FastAPI: yield chunk (delta)
+        OpenRouter-->>FastAPI: yield chunk (delta)
         FastAPI-->>App: yield SSE data: {"choices": [{"delta": {"content": "..."}}]}
         App->>App: Accumulate buffer & Render Markdown
         App->>App: Scroll window to bottom
     end
     
-    OpenAI-->>FastAPI: Stream Terminated
-    deactivate OpenAI
+    OpenRouter-->>FastAPI: Stream Terminated
+    deactivate OpenRouter
     
     FastAPI-->>App: yield SSE data: [DONE]
     deactivate FastAPI
@@ -175,14 +175,14 @@ stateDiagram-v2
 ### Prerequisites
 
 - Python **3.10+**
-- An [OpenAI API key](https://platform.openai.com/api-keys)
+- An [OpenRouter API key](https://openrouter.ai/keys) (free tier available)
 
 ### Install and run
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ShahabAhmed01/aiprojecty.git
-cd aiprojecty
+git clone https://github.com/ShahabAhmed01/zynex-ai.git
+cd zynex-ai
 
 # 2. Establish a secure virtual environment
 python -m venv venv
@@ -194,7 +194,7 @@ pip install -r requirements.txt
 
 # 4. Configure environment secrets
 cp .env.example .env
-# Edit .env and append: OPENAI_API_KEY=sk-...
+# Edit .env and append: OPENROUTER_API_KEY=sk-or-...
 
 # 5. Initialize the Uvicorn ASGI server
 python run.py
@@ -208,8 +208,8 @@ The application mounts statically on **[http://localhost:8000](http://localhost:
 
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
-| `OPENAI_API_KEY` | Yes | — | Authentication key for OpenAI model inference |
-| `DEFAULT_MODEL` | No | `gpt-4o` | Model ID fallback (`gpt-4o`, `gpt-4o-mini`) |
+| `OPENROUTER_API_KEY` | No | — | Authentication key for OpenRouter (free tier available) |
+| `DEFAULT_MODEL` | No | `google/gemini-2.0-flash-001` | Model ID fallback (free models available) |
 | `HOST` | No | `0.0.0.0` | Socket bind address for Uvicorn |
 | `PORT` | No | `8000` | Exposed HTTP port |
 | `MAX_TOKENS` | No | `2048` | Maximum output token threshold per request |
@@ -253,7 +253,7 @@ The repository is built for instant PaaS configuration.
 |----------|---------------------|
 | **Railway** | Configured via [`railway.toml`](railway.toml). Auto-detects ASGI app. |
 | **Render** | Configured via [`render.yaml`](render.yaml). Builds via pip. |
-| **Docker** | Standardized containerization. Run via: <br>`docker build -t aiprojecty .` <br>`docker run -p 8000:8000 -e OPENAI_API_KEY=... aiprojecty` |
+| **Docker** | Standardized containerization. Run via: <br>`docker build -t zynex .` <br>`docker run -p 8000:8000 -e OPENROUTER_API_KEY=... zynex` |
 
 ---
 
@@ -262,7 +262,7 @@ The repository is built for instant PaaS configuration.
 | Domain | Technology / Framework | Justification |
 |--------|------------------------|---------------|
 | **API Layer** | FastAPI, Uvicorn, Pydantic | High-performance ASGI processing, built-in validation. |
-| **LLM Driver** | OpenAI SDK (`AsyncOpenAI`) | Asynchronous socket handling for API requests. |
+| **LLM Driver** | OpenRouter via OpenAI SDK (`AsyncOpenAI`) | Asynchronous socket handling for API requests with free tier access. |
 | **Frontend** | Vanilla HTML5, CSS3, ES6 | Maximizes client execution speed by bypassing DOM diffing. |
 | **Styling** | Native CSS Variables | Enforces strict design tokens (DM Sans, JetBrains Mono). |
 

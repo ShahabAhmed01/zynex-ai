@@ -1,5 +1,5 @@
 /**
- * AIProjecTy — Frontend Application
+ * Zynex — Frontend Application
  * Streaming chat interface with conversation history
  */
 
@@ -327,7 +327,7 @@ function appendMessage({ role, content }) {
         <div class="message-avatar ${isUser ? 'user-avatar' : 'ai-avatar'}">
           ${isUser ? '👤' : '✦'}
         </div>
-        <span class="message-role">${isUser ? 'You' : 'AIProjecTy'}</span>
+        <span class="message-role">${isUser ? 'You' : 'Zynex'}</span>
       </div>
       <div class="message-bubble">${isUser ? escHtml(content) : renderMarkdown(content)}</div>
     </div>

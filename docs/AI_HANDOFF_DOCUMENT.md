@@ -10,8 +10,8 @@
 | Field | Value |
 |---|---|
 | **Project Name** | Zynex |
-| **Repo** | `https://github.com/Shahabahmed01/zynex-ai` |
-| **Owner** | Shahab Ahmed (`@Shahabahmed01` on GitHub) |
+| **Repo** | `https://github.com/ShahabAhmed01/zynex-ai` |
+| **Owner** | Shahab Ahmed (`@ShahabAhmed01` on GitHub) |
 | **License** | MIT (Shahab Ahmed, 2026) |
 | **Built By** | AI (100% — owner supervised only) |
 | **Stack** | Python 3.10+ · FastAPI · Vanilla HTML/CSS/JS |

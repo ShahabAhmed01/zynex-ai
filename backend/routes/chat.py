@@ -8,7 +8,7 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
     messages: List[Dict[str, Any]]
-    model: str = "gpt-4o"
+    model: str = "google/gemini-2.0-flash-001"
     stream: bool = True
 
 @router.post("/chat")

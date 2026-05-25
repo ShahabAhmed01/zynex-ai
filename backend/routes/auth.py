@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -64,7 +65,7 @@ async def get_auth_url(callback_url: str):
 
     auth_url = (
         "https://openrouter.ai/auth"
-        f"?callback_url={callback_url}"
+        f"?callback_url={quote(callback_url, safe='')}"
     )
     return AuthURLResponse(url=auth_url, demo_mode=s.demo_mode)
 

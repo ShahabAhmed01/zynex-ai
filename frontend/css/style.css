@@ -223,7 +223,7 @@ input[type="text"]:focus {
 }
 
 .depth-option:hover, .depth-option.active {
-    color: var(--color-white);
+    color: var(--color-text);
 }
 
 /* Features Grid */
@@ -251,7 +251,7 @@ input[type="text"]:focus {
 
 .feature-card h3 {
     font-size: 1.1rem;
-    color: var(--color-white);
+    color: var(--color-text);
     margin-bottom: 10px;
 }
 
@@ -269,7 +269,7 @@ input[type="text"]:focus {
 }
 
 .progress-container h2 {
-    color: var(--color-white);
+    color: var(--color-text);
     margin-bottom: 30px;
 }
 
@@ -318,7 +318,7 @@ input[type="text"]:focus {
 
 #report-title {
     font-size: 2rem;
-    color: var(--color-white);
+    color: var(--color-text);
 }
 
 .report-actions {
@@ -327,8 +327,8 @@ input[type="text"]:focus {
 }
 
 .btn-secondary {
-    background: var(--color-surface-2);
-    color: var(--color-white);
+    background: var(--color-surface);
+    color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: 8px;
     padding: 10px 20px;
@@ -353,8 +353,8 @@ input[type="text"]:focus {
 }
 
 .btn-outline:hover {
-    color: var(--color-white);
-    border-color: var(--color-white);
+    color: var(--color-text);
+    border-color: var(--color-text);
 }
 
 .report-content {
@@ -398,12 +398,12 @@ input[type="text"]:focus {
 }
 
 .toast {
-    background: var(--color-surface-2);
-    color: var(--color-white);
+    background: var(--color-surface);
+    color: var(--color-text);
     padding: 15px 25px;
     border-radius: 8px;
     border-left: 4px solid var(--color-blue);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     animation: slideIn 0.3s ease forwards;
 }
 
@@ -434,16 +434,16 @@ footer {
     margin-top: 30px;
     padding: 20px;
     border-radius: 12px;
-    background: rgba(20, 20, 30, 0.6);
+    background: var(--color-surface);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--color-border);
 }
 
 .history-title {
     font-size: 1rem;
     font-weight: 600;
     margin-bottom: 15px;
-    color: var(--color-white);
+    color: var(--color-text);
 }
 
 .history-list {
@@ -457,21 +457,21 @@ footer {
 .history-item {
     padding: 12px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--color-surface-light);
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid transparent;
 }
 
 .history-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--color-border);
+    border-color: var(--color-border);
     transform: translateX(4px);
 }
 
 .history-topic {
     font-weight: 500;
-    color: var(--color-white);
+    color: var(--color-text);
     margin-bottom: 4px;
     font-size: 0.9rem;
 }
@@ -493,13 +493,13 @@ footer {
     z-index: 1000;
     padding: 12px 20px;
     border-radius: 8px;
-    background: rgba(245, 158, 11, 0.2);
+    background: var(--color-surface);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid var(--color-warning);
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .demo-banner-icon {
@@ -508,14 +508,14 @@ footer {
 
 .demo-banner-text {
     font-size: 0.9rem;
-    color: var(--color-white);
+    color: var(--color-text);
     font-weight: 500;
 }
 
 .demo-banner-close {
     background: none;
     border: none;
-    color: var(--color-white);
+    color: var(--color-text);
     font-size: 1.5rem;
     cursor: pointer;
     padding: 0;
@@ -548,7 +548,7 @@ footer {
 .error-title {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--color-white);
+    color: var(--color-text);
     margin-bottom: 15px;
 }
 

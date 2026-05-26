@@ -12,7 +12,7 @@ const state = {
   controller: null,
   sidebarOpen: window.innerWidth > 768,
   models: [
-    { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', label: 'Gemini 2.0 (Free)' },
+    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' },
     { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 (Free)' },
     { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1 (Free)' }
   ],

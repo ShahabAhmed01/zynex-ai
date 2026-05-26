@@ -90,3 +90,8 @@ MANIFEST
 *.tmp
 *.temp
 .cache/
+
+# ── AI Handoff Documents (private) ───────────────────────────
+AI_HANDOFF_DOCUMENT.md
+PROMPT_FOR_NEXT_AI.md
+docs/AI_HANDOFF_DOCUMENT.md

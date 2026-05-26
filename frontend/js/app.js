@@ -12,9 +12,7 @@ const state = {
   controller: null,
   sidebarOpen: window.innerWidth > 768,
   models: [
-    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' },
-    { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 (Free)' },
-    { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1 (Free)' }
+    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' }
   ],
   modelIndex: 0,
 };
@@ -212,11 +210,19 @@ async function send() {
   state.controller = new AbortController();
 
   try {
+    const messagesPayload = [
+      {
+        role: 'system',
+        content: 'You are Zynex, a helpful AI assistant. Answer ONLY the most recent user question directly and concisely. Do NOT repeat, summarize, or reference any previous questions or answers in the conversation. Go straight to the answer for the current question.'
+      },
+      ...state.messages
+    ];
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: state.messages,
+        messages: messagesPayload,
         model: state.models[state.modelIndex].id,
         stream: true,
       }),
@@ -266,6 +272,13 @@ async function send() {
 
     // Final render without cursor
     bubble.innerHTML = renderMarkdown(fullContent);
+
+    // Append a "done" follow-up hint below the bubble
+    const followUp = document.createElement('div');
+    followUp.style.cssText = 'margin-top:10px;font-size:12.5px;color:var(--text-mute);font-style:italic;';
+    followUp.textContent = 'Is there anything else you would like to know?';
+    aiMsgEl.querySelector('.message-inner').appendChild(followUp);
+
     state.messages.push({ role: 'assistant', content: fullContent });
     saveConversation();
 
@@ -273,8 +286,15 @@ async function send() {
     if (err.name === 'AbortError') {
       bubble.innerHTML = renderMarkdown(bubble.textContent.replace('▊', '') || '*Response stopped.*');
     } else {
-      bubble.innerHTML = `<span style="color:#fca5a5">⚠ ${escHtml(err.message)}</span>`;
-      showToast(err.message, 'error');
+      bubble.innerHTML = `
+        <div style="color:#fca5a5;padding:10px 0;">
+          ⚠ <strong>Search failed.</strong> Could not get a response from the AI.<br>
+          <span style="font-size:13px;color:var(--text-dim);margin-top:4px;display:block;">
+            Please try again. If the problem continues, reload the page.
+          </span>
+        </div>
+      `;
+      showToast('Search failed — please try again', 'error');
     }
   } finally {
     hideProgress();

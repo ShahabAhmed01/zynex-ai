@@ -423,6 +423,21 @@
       letter-spacing: 0.3px;
     }
 
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      margin-left: auto;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
     .message-bubble {
       max-width: 85%;
       font-size: 15px;
@@ -440,6 +455,33 @@
     .message.ai .message-bubble {
       color: var(--text);
       padding: 4px 0;
+    }
+
+    .message-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border2);
     }
 
     /* AI avatar */
@@ -840,7 +882,7 @@
 
       <div class="header-title" id="header-title">New conversation</div>
 
-      <div class="model-selector" id="model-btn" style="cursor:default;">
+      <div class="model-selector" id="model-btn" onclick="cycleModel()">
         <div class="model-dot"></div>
         <span id="model-label">Gemini 2.0 (Free)</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

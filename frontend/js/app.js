@@ -12,7 +12,9 @@ const state = {
   controller: null,
   sidebarOpen: window.innerWidth > 768,
   models: [
-    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' }
+    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' },
+    { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B (Free)' },
+    { id: 'z-ai/glm-4.5-air:free', label: 'GLM 4.5 Air (Free)' },
   ],
   modelIndex: 0,
 };
@@ -355,12 +357,44 @@ function appendMessage({ role, content }) {
         <span class="message-role">${isUser ? 'You' : 'Zynex'}</span>
       </div>
       <div class="message-bubble">${isUser ? escHtml(content) : renderMarkdown(content)}</div>
+      ${isAi ? `
+        <div class="message-actions">
+          <button class="copy-btn" onclick="copyMessage(this)" title="Copy response">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+      ` : ''}
     </div>
   `;
 
   $messages.appendChild(wrap);
   scrollToBottom();
   return wrap;
+}
+
+function copyMessage(btn) {
+  const bubble = btn.closest('.message-inner').querySelector('.message-bubble');
+  const text = bubble.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copied to clipboard', 'success');
+    btn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    `;
+    setTimeout(() => {
+      btn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      `;
+    }, 2000);
+  });
 }
 
 function renderMessages() {
@@ -379,6 +413,25 @@ function scrollToBottom() {
 function renderMarkdown(text) {
   if (!text) return '';
   let html = escHtml(text);
+
+  // Strip LaTeX delimiters and clean up broken LaTeX
+  // Handle both escaped \\( and unescaped \( patterns
+  html = html.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    return `<div style="background:var(--surface);padding:12px;border-radius:8px;margin:10px 0;font-family:var(--mono);font-size:13px;overflow-x:auto;border:1px solid var(--border);">${formatLatex(math)}</div>`;
+  });
+
+  html = html.replace(/\\\(([^)]+?)\\\)/g, (_, math) => {
+    return `<code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;">${formatLatex(math)}</code>`;
+  });
+
+  // Handle unescaped \( ... \) patterns
+  html = html.replace(/\(([^)]*\\[a-zA-Z]+[^)]*)\)/g, (_, math) => {
+    return `<code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;">${formatLatex(math)}</code>`;
+  });
+
+  // Handle any remaining \( or \) patterns (both escaped and unescaped)
+  html = html.replace(/\\\(/g, '').replace(/\\\)/g, '');
+  html = html.replace(/\(\\[^)]*\)/g, ''); // Remove any remaining LaTeX in parentheses
 
   // Code blocks (``` ... ```)
   html = html.replace(/\`\`\`(\w*)\n?([\s\S]*?)\`\`\`/g, (_, lang, code) => {
@@ -414,8 +467,56 @@ function renderMarkdown(text) {
   // Clean up double-brs after block elements
   html = html.replace(/<\/pre><br>/g, '</pre>');
   html = html.replace(/<\/h[1-3]><br>/g, '</h1>');
+  html = html.replace(/<\/div><br>/g, '</div>');
 
   return html;
+}
+
+// Format LaTeX math to readable HTML - simplified to handle broken LaTeX
+function formatLatex(latex) {
+  // Clean up malformed LaTeX by stripping commands and keeping symbols
+  let cleaned = latex
+    .replace(/\\frac\{[^}]*\}\{[^}]*\}/g, '(fraction)')  // Remove complex fractions
+    .replace(/\\frac\{[^}]*\{[^}]*\}/g, '(fraction)')   // Handle missing closing brace
+    .replace(/\\frac\{[^}]+\}/g, '(fraction)')          // Handle incomplete fractions
+    .replace(/\\frac/g, '/')                             // Replace remaining \frac
+    .replace(/\\partial/g, '∂')
+    .replace(/\\hat\{[^}]*\}/g, '')                     // Remove hat notation
+    .replace(/\\hat/g, '')
+    .replace(/\\leftarrow/g, '←')
+    .replace(/\\rightarrow/g, '→')
+    .replace(/\\ldots/g, '...')
+    .replace(/\\dots/g, '...')
+    .replace(/\\cdot/g, '·')
+    .replace(/\\times/g, '×')
+    .replace(/\\div/g, '÷')
+    .replace(/\\pm/g, '±')
+    .replace(/\\neq/g, '≠')
+    .replace(/\\leq/g, '≤')
+    .replace(/\\geq/g, '≥')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\infty/g, '∞')
+    .replace(/\\sum/g, '∑')
+    .replace(/\\prod/g, '∏')
+    .replace(/\\int/g, '∫')
+    .replace(/\\sqrt\{[^}]*\}/g, '√')                 // Remove sqrt content
+    .replace(/\\sqrt/g, '√')
+    .replace(/\\delta/g, 'δ')
+    .replace(/\\sigma/g, 'σ')
+    .replace(/\\eta/g, 'η')
+    .replace(/\\mathcal\{[^}]*\}/g, 'L')                // Replace mathcal with L
+    .replace(/\\mathcal/g, 'L')
+    .replace(/\\odot/g, '·')
+    .replace(/\\big/g, '')                             // Remove big commands
+    .replace(/\\[a-zA-Z]+\{[^}]*\}/g, '')              // Remove other LaTeX commands with args
+    .replace(/\\[a-zA-Z]+/g, '')                        // Remove remaining LaTeX commands
+    .replace(/\^\{?[^{\\}]*\}?/g, '')                   // Remove superscripts
+    .replace(/_\{?[^{\\}]*\}?/g, '')                    // Remove subscripts
+    .replace(/[{}]/g, '')                              // Remove remaining braces
+    .replace(/\s+/g, ' ')                               // Clean up whitespace
+    .trim();
+  
+  return cleaned || '(math expression)';
 }
 
 function escHtml(str) {

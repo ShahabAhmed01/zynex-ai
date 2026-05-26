@@ -11,7 +11,7 @@ from typing import Optional
 
 from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
 
-from backend.config import settings
+from backend.config import get_settings
 
 logger = logging.getLogger("zynex.llm")
 
@@ -24,9 +24,10 @@ def _get_client() -> AsyncOpenAI:
     """Lazy-initialise the OpenAI-compatible async client for OpenRouter."""
     global _client
     if _client is None:
+        s = get_settings()
         _client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=settings.OPENROUTER_API_KEY or "demo-placeholder",
+            api_key=s.OPENROUTER_API_KEY or "demo-placeholder",
             timeout=60.0,
         )
     return _client
@@ -132,14 +133,15 @@ async def generate(
     Includes retry logic (3 attempts with exponential backoff).
     """
     # ── Demo mode ─────────────────────────────────────────────────────────
-    if settings.demo_mode:
+    s = get_settings()
+    if s.demo_mode:
         logger.info("Demo mode – returning template response")
         await asyncio.sleep(0.3)  # Simulate latency
         return _demo_response(prompt, system)
 
     # ── Real mode ─────────────────────────────────────────────────────────
     client = _get_client()
-    chosen_model = model or settings.DEFAULT_MODEL
+    chosen_model = model or s.DEFAULT_MODEL
 
     messages: list[dict] = []
     if system:
@@ -229,16 +231,17 @@ async def verify_connection() -> dict:
     Ping OpenRouter with a minimal prompt to confirm the API key and model work.
     Does not use demo-mode fallbacks.
     """
-    if settings.demo_mode:
+    s = get_settings()
+    if s.demo_mode:
         return {
             "ok": False,
             "demo_mode": True,
-            "model": settings.DEFAULT_MODEL,
+            "model": s.DEFAULT_MODEL,
             "message": "OPENROUTER_API_KEY not set — running in demo mode",
         }
 
     client = _get_client()
-    chosen_model = settings.DEFAULT_MODEL
+    chosen_model = s.DEFAULT_MODEL
 
     try:
         response = await client.chat.completions.create(

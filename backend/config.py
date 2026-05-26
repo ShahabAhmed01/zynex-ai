@@ -1,6 +1,7 @@
 """
 Zynex Configuration Module
 Loads environment variables and provides a typed settings object.
+Supports runtime reload for dynamic key provisioning.
 """
 
 from __future__ import annotations
@@ -52,15 +53,44 @@ class Settings:
         """Run startup validation – prints warnings but never crashes."""
         if self.demo_mode:
             print(
-            "\nWARNING: OPENROUTER_API_KEY not set - Zynex is running in DEMO MODE.\n"
-            "   Set the key in a .env file or environment variable for real AI responses.\n"
-        )
+                "\nINFO: OPENROUTER_API_KEY not set — Zynex is running in DEMO MODE."
+                "\n   Users can activate free AI directly from the web interface.\n"
+            )
         else:
             masked = self.OPENROUTER_API_KEY[:6] + "..." + self.OPENROUTER_API_KEY[-4:]
             print(f"\nOpenRouter API key detected: {masked}")
             print(f"   Default model: {self.DEFAULT_MODEL}\n")
 
 
-# Singleton
+# ── Singleton with reload support ────────────────────────────────────────────
+
 settings = Settings()
 settings.validate()
+
+
+def get_settings() -> Settings:
+    """Return the current settings singleton."""
+    return settings
+
+
+def reload_settings() -> Settings:
+    """Re-read .env and rebuild the settings singleton."""
+    global settings
+
+    # Clear cached env vars so dotenv re-reads the file
+    for key in ("OPENROUTER_API_KEY", "DEFAULT_MODEL", "HOST", "PORT"):
+        os.environ.pop(key, None)
+
+    load_dotenv(_project_root / ".env", override=True)
+
+    settings = Settings()
+    settings.validate()
+
+    # Reset the LLM client singleton so it picks up the new key
+    try:
+        from backend.services import llm_client
+        llm_client._client = None
+    except ImportError:
+        pass
+
+    return settings

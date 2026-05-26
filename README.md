@@ -40,6 +40,7 @@ The system is decoupled into two cleanly separated layers:
 | Capability | Description |
 |------------|-------------|
 | **Asynchronous SSE Streaming** | Response streaming via HTTP/1.1 Server-Sent Events, achieving token-by-token rendering with latency measured in milliseconds. |
+| **Zero-Config OAuth** | Automatic OpenRouter API key provisioning via the web UI without manual `.env` setup. |
 | **State Persistence** | Client-side memory via `localStorage`, persisting conversation chains across sessions instantly. |
 | **Multi-Model Orchestration** | Dynamic swapping between free models via OpenRouter: `Gemini 2.0 Flash`, `Llama 3.3 70B`, and `DeepSeek R1`. |
 | **Markdown Compilation** | Custom regular-expression based markdown renderer handling code blocks, inline styling, and structured lists on the fly. |
@@ -172,10 +173,11 @@ stateDiagram-v2
 
 ## Quick Start
 
+**Zynex features a Zero-Config OAuth flow.** You do not need to configure an API key to launch the app!
+
 ### Prerequisites
 
 - Python **3.10+**
-- An [OpenRouter API key](https://openrouter.ai/keys) (free tier available)
 
 ### Install and run
 
@@ -192,15 +194,12 @@ venv\Scripts\activate      # Windows
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure environment secrets
-cp .env.example .env
-# Edit .env and append: OPENROUTER_API_KEY=sk-or-...
-
-# 5. Initialize the Uvicorn ASGI server
+# 4. Initialize the server (No .env file needed!)
 python run.py
 ```
 
 The application mounts statically on **[http://localhost:8000](http://localhost:8000)**. 
+When you open the web UI, simply click the **"Activate Free AI"** banner to instantly auto-provision your API key via OpenRouter. 
 
 ---
 

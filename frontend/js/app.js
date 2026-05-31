@@ -544,11 +544,14 @@ async function checkConfig() {
     const resp = await fetch('/api/config');
     if (!resp.ok) return;
     const config = await resp.json();
-    if (config.demo_mode) {
-      $setupBanner.classList.add('visible');
+    $setupBanner.classList.add('visible');
+    if (config.has_api_key) {
+      $activateBtn.style.display = 'none';
+      $setupSuccess.classList.add('visible');
+      $setupSuccess.textContent = 'API key configured ✓';
     }
   } catch {
-    // Silently ignore — banner stays hidden
+    // Silently ignore
   }
 }
 
@@ -625,12 +628,8 @@ async function exchangeCode(code) {
 }
 
 function onOAuthSuccess() {
-  // Hide the banner with a success animation
   $activateBtn.style.display = 'none';
   $setupSuccess.classList.add('visible');
+  $setupSuccess.textContent = "AI activated — you're all set!";
   showToast('Free AI activated! No costs, ever.', 'success');
-
-  setTimeout(() => {
-    $setupBanner.classList.remove('visible');
-  }, 2500);
 }

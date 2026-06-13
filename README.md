@@ -25,6 +25,20 @@
 
 ---
 
+## Interface Showcase
+
+<p align="center">
+  <img src="demo-assets/screenshots/01-landing-page.png" alt="Landing Page" width="800"/>
+  <br/><em>Clean, single-screen chat interface</em>
+</p>
+
+<p align="center">
+  <img src="demo-assets/screenshots/04-generating-response.png" alt="Real-time Streaming" width="800"/>
+  <br/><em>Real-time token streaming and markdown rendering</em>
+</p>
+
+---
+
 ## Overview
 
 **Zynex** is a highly optimized, self-hostable AI chat application that delivers a ChatGPT-like experience. It features real-time Server-Sent Events (SSE) streaming, persistent conversational state management, and a zero-dependency, ultra-lightweight DOM-manipulating frontend.

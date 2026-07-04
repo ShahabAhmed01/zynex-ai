@@ -102,6 +102,10 @@ export function appendMessage({ role, content }) {
 }
 
 export function copyMessage(btn) {
+  if (!navigator.clipboard) {
+    showToast('Clipboard not available', 'error');
+    return;
+  }
   const bubble = btn.closest('.message__inner').querySelector('.message__bubble');
   const text = bubble.textContent;
   navigator.clipboard.writeText(text).then(() => {

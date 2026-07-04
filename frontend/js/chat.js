@@ -86,6 +86,10 @@ export function newChat() {
 export function clearChat() {
   if (state.messages.length === 0) return;
   if (!confirm('Clear this conversation?')) return;
+  if (state.currentId) {
+    state.conversations = state.conversations.filter(c => c.id !== state.currentId);
+    saveConversations(state.conversations);
+  }
   newChat();
 }
 
@@ -382,6 +386,10 @@ export function bindModals() {
   const $settingsBackdrop = document.getElementById('settingsBackdrop');
 
   function openSettings() {
+    const $apiKeyInput = document.getElementById('apiKeyInput');
+    const $apiEndpointInput = document.getElementById('apiEndpointInput');
+    if ($apiKeyInput) $apiKeyInput.value = localStorage.getItem('zynex_api_key') || '';
+    if ($apiEndpointInput) $apiEndpointInput.value = localStorage.getItem('zynex_api_endpoint') || '';
     $settingsModal.classList.add('modal--visible');
   }
   function closeSettings() {
@@ -393,10 +401,15 @@ export function bindModals() {
   $cancelSettingsBtn?.addEventListener('click', closeSettings);
   $settingsBackdrop?.addEventListener('click', closeSettings);
   $saveSettingsBtn?.addEventListener('click', () => {
+    const $apiKeyInput = document.getElementById('apiKeyInput');
+    const $apiEndpointInput = document.getElementById('apiEndpointInput');
+    if ($apiKeyInput?.value.trim()) localStorage.setItem('zynex_api_key', $apiKeyInput.value.trim());
+    if ($apiEndpointInput?.value.trim()) localStorage.setItem('zynex_api_endpoint', $apiEndpointInput.value.trim());
     showToast('Settings saved', 'success');
     closeSettings();
   });
 
+  const $exportBtn = document.getElementById('exportBtn');
   const $exportModal = document.getElementById('exportModal');
   const $closeExportBtn = document.getElementById('closeExportBtn');
   const $cancelExportBtn = document.getElementById('cancelExportBtn');
@@ -412,6 +425,7 @@ export function bindModals() {
     $exportModal.classList.remove('modal--visible');
   }
 
+  $exportBtn?.addEventListener('click', openExport);
   $closeExportBtn?.addEventListener('click', closeExport);
   $cancelExportBtn?.addEventListener('click', closeExport);
   $exportBackdrop?.addEventListener('click', closeExport);

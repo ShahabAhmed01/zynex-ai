@@ -4,7 +4,8 @@
 
 export async function streamChat({ messages, model, signal, onChunk, onDone, onError }) {
   try {
-    const response = await fetch('/api/chat', {
+    const endpoint = localStorage.getItem('zynex_api_endpoint') || '/api/chat';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, model, stream: true }),

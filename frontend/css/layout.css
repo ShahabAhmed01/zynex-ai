@@ -470,16 +470,41 @@
 }
 
 /* ── Responsive Design ── */
+
+/* ── Tablet: 768px - 1024px ── */
+@media (max-width: 1024px) {
+  .sidebar {
+    --sidebar-width: 260px;
+    min-width: 260px;
+    width: 260px;
+  }
+
+  .sidebar--collapsed {
+    width: 260px;
+    min-width: 260px;
+  }
+}
+
+/* ── Mobile: < 768px ── */
 @media (max-width: 768px) {
+  /* App container */
+  .app {
+    position: relative;
+  }
+
+  /* Sidebar: full-screen overlay with slide-in */
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100%;
+    height: 100dvh;
     transform: translateX(-100%);
-    width: 280px;
-    min-width: 280px;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 85vw;
+    max-width: 320px;
+    min-width: 260px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
   }
 
   .sidebar--open {
@@ -488,14 +513,16 @@
   }
 
   .sidebar--collapsed {
-    width: 280px;
-    min-width: 280px;
+    width: 85vw;
+    max-width: 320px;
+    min-width: 260px;
     transform: translateX(-100%);
   }
 
   /* Ensure 44px touch targets on mobile */
   .sidebar__conversation {
     min-height: 44px;
+    padding: 10px 12px;
   }
 
   .sidebar__conversation-delete {
@@ -509,23 +536,158 @@
     min-height: var(--header-height);
   }
 
-  .welcome__suggestions {
-    grid-template-columns: 1fr;
+  /* Main: full width, no margin */
+  .main {
+    width: 100vw;
+    position: relative;
+    z-index: 1;
   }
 
+  /* Main header: compact */
+  .main__header {
+    padding: 0 var(--space-1);
+    gap: var(--space-1);
+    min-height: 48px;
+    height: auto;
+  }
+
+  .main__title {
+    font-size: var(--font-size-base);
+  }
+
+  .main__actions {
+    gap: 4px;
+  }
+
+  /* Menu button */
+  .main__menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Messages: full width padding */
   .messages {
     padding: 0 var(--space-2);
   }
 
+  /* Input area: fixed bottom with safe area */
   .main__input {
-    padding: var(--space-1) var(--space-1) var(--space-1);
+    position: sticky;
+    bottom: 0;
+    padding: var(--space-1);
+    padding-bottom: calc(var(--space-1) + env(safe-area-inset-bottom, 0px));
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
   }
 
-  .main__menu {
-    display: flex;
+  /* Input hint: hidden on mobile */
+  .input-area__hint {
+    display: none;
+  }
+
+  /* Welcome screen */
+  .welcome {
+    padding: var(--space-4) var(--space-2) 120px;
+    min-height: auto;
+  }
+
+  .welcome__suggestions {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    padding: 0 var(--space-1);
+  }
+
+  .welcome__title {
+    font-size: 1.25rem;
+  }
+
+  .welcome__subtitle {
+    font-size: var(--font-size-base);
+  }
+
+  /* Modal: full screen on mobile */
+  .modal__content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .modal__header {
+    padding: var(--space-2);
+  }
+
+  .modal__body {
+    padding: var(--space-2);
+  }
+
+  .modal__footer {
+    padding: var(--space-2);
+  }
+
+  /* Toast: full width on mobile */
+  .toast-container {
+    left: var(--space-2);
+    right: var(--space-2);
+    bottom: 100px;
+  }
+
+  .toast {
+    max-width: 100%;
+  }
+
+  /* Model selector: compact on mobile */
+  .model-selector {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  /* Prevent text size auto-increase on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Smooth scroll for iOS */
+  .main__content {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Keyboard open: adjust input position */
+  .main__input--keyboard-open {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    padding-bottom: calc(var(--space-1) + env(safe-area-inset-bottom, 0px));
   }
 }
 
+/* ── Small mobile: < 480px ── */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 90vw;
+    max-width: none;
+    min-width: auto;
+  }
+
+  .sidebar--collapsed {
+    width: 90vw;
+    max-width: none;
+    min-width: auto;
+  }
+
+  .main__header {
+    padding: 0 4px;
+  }
+
+  .welcome {
+    padding: var(--space-3) var(--space-1) 120px;
+  }
+}
+
+/* ── Desktop: >= 769px ── */
 @media (min-width: 769px) {
   .sidebar-overlay {
     display: none !important;

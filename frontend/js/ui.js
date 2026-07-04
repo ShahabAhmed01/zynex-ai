@@ -1,5 +1,5 @@
 /**
- * UI — DOM utilities, toast, progress, message rendering
+ * UI — DOM utilities, toast, progress, message rendering, mobile interactions
  */
 
 import { renderMarkdown, escHtml } from './markdown.js';
@@ -9,6 +9,10 @@ const $chat        = document.getElementById('chatArea');
 const $welcome     = document.getElementById('welcomeScreen');
 const $messages    = document.getElementById('messages');
 const $progressBar = document.getElementById('progressBar');
+const $mainInput   = document.querySelector('.main__input');
+
+// ── Mobile detection ───────────────────────────────────────────────────────
+const isMobile = () => window.innerWidth <= 768;
 
 // ── Progress bar ───────────────────────────────────────────────────────────
 let progressInterval = null;
@@ -85,6 +89,13 @@ export function appendMessage({ role, content }) {
     copyBtn.addEventListener('click', () => copyMessage(copyBtn));
   }
 
+  // Bind image tap-to-expand on mobile
+  if (isMobile()) {
+    wrap.querySelectorAll('.message__bubble img').forEach(img => {
+      img.addEventListener('click', () => expandImage(img));
+    });
+  }
+
   $messages.appendChild(wrap);
   scrollToBottom();
   return wrap;
@@ -117,6 +128,90 @@ export function renderMessages(messages) {
   $messages.style.display = 'flex';
   messages.forEach(m => appendMessage({ role: m.role, content: m.content }));
   scrollToBottom();
+}
+
+// ── Image tap-to-expand (mobile) ──────────────────────────────────────────
+let expandedOverlay = null;
+
+function expandImage(img) {
+  if (expandedOverlay) return;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; cursor: pointer;
+    animation: fadeIn 0.2s ease;
+  `;
+
+  const clone = img.cloneNode();
+  clone.style.cssText = `
+    max-width: 100%; max-height: 90vh; object-fit: contain;
+    border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  `;
+
+  overlay.appendChild(clone);
+  document.body.appendChild(overlay);
+  expandedOverlay = overlay;
+
+  overlay.addEventListener('click', () => {
+    overlay.remove();
+    expandedOverlay = null;
+  }, { once: true });
+}
+
+// ── Mobile keyboard handling ───────────────────────────────────────────────
+function initKeyboardHandling() {
+  if (!isMobile()) return;
+
+  // Use VisualViewport API to detect keyboard presence
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const viewportHeight = window.visualViewport.height;
+      const fullHeight = window.innerHeight;
+
+      // Keyboard is likely open if viewport shrunk significantly
+      if (viewportHeight < fullHeight * 0.85) {
+        document.documentElement.style.setProperty(
+          '--keyboard-height',
+          `${fullHeight - viewportHeight}px`
+        );
+        $mainInput?.classList.add('main__input--keyboard-open');
+      } else {
+        document.documentElement.style.setProperty('--keyboard-height', '0px');
+        $mainInput?.classList.remove('main__input--keyboard-open');
+      }
+
+      // Scroll to bottom when keyboard appears to keep input visible
+      scrollToBottom();
+    }, { passive: true });
+  }
+
+  // Fallback: detect focus on input to adjust layout
+  const textarea = document.getElementById('messageInput');
+  if (textarea) {
+    textarea.addEventListener('focus', () => {
+      setTimeout(() => scrollToBottom(), 300);
+    }, { passive: true });
+  }
+}
+
+// ── Prevent 300ms tap delay ────────────────────────────────────────────────
+function initTapDelay() {
+  // Add touch-action: manipulation to interactive elements
+  // This CSS-level fix is more reliable than JS
+  const style = document.createElement('style');
+  style.textContent = `
+    @media (pointer: coarse) {
+      a, button, [role="button"], input, textarea, select, label,
+      .sidebar__conversation, .welcome__suggestion, .copy-btn,
+      .code-block__copy, .model-selector, .toast {
+        touch-action: manipulation;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // ── Modal Interactions ─────────────────────────────────────────────────────
@@ -193,4 +288,11 @@ function handleModalKeydown(e, modalId) {
 
 export function isModalOpen(modalId) {
   return activeModals.has(modalId);
+}
+
+// ── Mobile touch interactions init ─────────────────────────────────────────
+// Call this from app.js after DOM is ready
+export function initMobileInteractions() {
+  initTapDelay();
+  initKeyboardHandling();
 }

@@ -470,22 +470,72 @@
 }
 
 /* ── Responsive Chat Styles ── */
-@media (max-width: 768px) {
+
+/* ── Tablet: 768px - 1024px ── */
+@media (max-width: 1024px) {
   .message__inner {
     padding: 0 var(--space-2);
   }
 
   .message__bubble {
-    max-width: 95%;
+    max-width: 90%;
+  }
+}
+
+/* ── Mobile: < 768px ── */
+@media (max-width: 768px) {
+  /* Messages: full-width, touch-optimized spacing */
+  .message {
+    padding: var(--space-1) 0;
   }
 
-  .welcome__suggestions {
-    grid-template-columns: 1fr;
-    max-width: 100%;
+  .message__inner {
+    padding: 0 var(--space-2);
   }
 
-  .welcome__title {
-    font-size: 1.25rem;
+  .message__bubble {
+    max-width: 92%;
+  }
+
+  /* User message: tighter padding */
+  .message--user .message__bubble {
+    padding: 10px 14px;
+    border-radius: 16px 16px 4px 16px;
+  }
+
+  /* AI message: compact */
+  .message--ai .message__bubble {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Message actions: always visible on mobile (no hover) */
+  .message__actions {
+    opacity: 1;
+  }
+
+  /* Copy button: larger touch target */
+  .copy-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+
+  /* Code blocks: horizontal scroll with touch */
+  .message__bubble pre {
+    margin: 8px 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .code-block__header {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .code-block__copy {
+    padding: 5px 8px;
+    font-size: 11px;
+    min-height: 32px;
   }
 
   .code-block__lines {
@@ -493,13 +543,111 @@
   }
 
   .code-block__code {
-    padding: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+  }
+
+  .message__bubble code {
+    font-size: 0.85em;
+    padding: 2px 5px;
+  }
+
+  /* Tables: horizontal scroll */
+  .message__bubble table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 12.5px;
+    margin: 8px 0;
+  }
+
+  .message__bubble th,
+  .message__bubble td {
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+
+  /* Images: responsive */
+  .message__bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  /* Blockquote: tighter on mobile */
+  .message__bubble blockquote {
+    margin: 8px 0;
+    padding: 6px 12px;
+  }
+
+  /* Typing indicator: compact */
+  .typing-indicator {
+    padding: 10px 0 4px;
+  }
+
+  /* Welcome screen: mobile-optimized */
+  .welcome {
+    padding: var(--space-3) var(--space-2) 100px;
+    min-height: auto;
+  }
+
+  .welcome__icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .welcome__title {
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+  }
+
+  .welcome__subtitle {
+    font-size: 14px;
+    margin-bottom: var(--space-2);
+  }
+
+  .welcome__suggestions {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    gap: var(--space-1);
+  }
+
+  .welcome__suggestion {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+
+  /* List items: tighter spacing */
+  .message--ai .message__bubble ul,
+  .message--ai .message__bubble ol {
+    padding-left: 20px;
+    margin: 6px 0;
+  }
+
+  .message--ai .message__bubble li {
+    margin: 3px 0;
+    line-height: 1.5;
   }
 }
 
+/* ── Small mobile: < 480px ── */
 @media (max-width: 480px) {
+  .message__inner {
+    padding: 0 var(--space-1);
+  }
+
+  .message__bubble {
+    max-width: 95%;
+  }
+
   .message--user .message__bubble {
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
 
   .message--ai .message__bubble {
@@ -507,6 +655,30 @@
   }
 
   .code-block__code {
-    font-size: 12px;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .code-block__header {
+    padding: 5px 8px;
+  }
+
+  .welcome__title {
+    font-size: 1.1rem;
+  }
+
+  .welcome__subtitle {
+    font-size: 13px;
+  }
+}
+
+/* ── Desktop: >= 769px ── */
+@media (min-width: 769px) {
+  .message__actions {
+    opacity: 0;
+  }
+
+  .message:hover .message__actions {
+    opacity: 1;
   }
 }

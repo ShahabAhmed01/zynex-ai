@@ -15,6 +15,8 @@ import {
   bindModals,
 } from './chat.js';
 
+import { initMobileInteractions } from './ui.js';
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const $input   = document.getElementById('messageInput');
 const $sendBtn = document.getElementById('sendBtn');
@@ -26,6 +28,7 @@ const $overlay = document.getElementById('sidebarOverlay');
   renderHistory();
   updateSidebar();
   bindModals();
+  initMobileInteractions();
 
   // Auto-resize textarea
   $input.addEventListener('input', () => {

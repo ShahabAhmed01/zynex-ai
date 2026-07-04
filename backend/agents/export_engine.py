@@ -6,13 +6,10 @@ Generates PDF reports, HTML slide decks, and DOCX documents from ResearchReport 
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Any
 from io import BytesIO
 
 from jinja2 import Environment, FileSystemLoader
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from backend.config import settings
@@ -126,7 +123,7 @@ async def generate_docx(
     # Sections
     for idx, section in enumerate(report.sections, 1):
         doc.add_heading(section.title or f"Section {idx}", level=1)
-        doc.add_paragraph(section.content or section.body or "")
+        doc.add_paragraph(section.content or "")
         doc.add_paragraph()
     
     # Citations
@@ -134,8 +131,8 @@ async def generate_docx(
         doc.add_heading("Sources", level=1)
         for idx, citation in enumerate(report.citations, 1):
             p = doc.add_paragraph(f"[{idx}] ", style="List Number")
-            p.add_run(citation.get("title", "Untitled")).bold = True
-            p.add_run(f"\n{citation.get('url', '')}")
+            p.add_run(citation.title or "Untitled").bold = True
+            p.add_run(f"\n{citation.url or ''}")
             doc.add_paragraph()
     
     # Save to BytesIO

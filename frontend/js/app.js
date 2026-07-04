@@ -19,6 +19,7 @@ import {
 const $input   = document.getElementById('messageInput');
 const $sendBtn = document.getElementById('sendBtn');
 const $sidebar = document.getElementById('sidebar');
+const $overlay = document.getElementById('sidebarOverlay');
 
 // ── Init ───────────────────────────────────────────────────────────────────
 (function init() {
@@ -58,6 +59,11 @@ const $sidebar = document.getElementById('sidebar');
     }
   });
 
+  // Mobile: close sidebar when overlay is tapped
+  $overlay.addEventListener('click', e => {
+    if (state.sidebarOpen) toggleSidebar();
+  });
+
   // Mobile: swipe right to open sidebar
   let touchStartX = 0;
   let touchStartY = 0;
@@ -91,9 +97,13 @@ const $sidebar = document.getElementById('sidebar');
 function updateSidebar() {
   if (state.sidebarOpen) {
     $sidebar.classList.remove('sidebar--collapsed');
-    if (window.innerWidth <= 768) $sidebar.classList.add('sidebar--open');
+    if (window.innerWidth <= 768) {
+      $sidebar.classList.add('sidebar--open');
+      $overlay.classList.add('sidebar-overlay--visible');
+    }
   } else {
     $sidebar.classList.add('sidebar--collapsed');
     $sidebar.classList.remove('sidebar--open');
+    $overlay.classList.remove('sidebar-overlay--visible');
   }
 }

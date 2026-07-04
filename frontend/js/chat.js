@@ -37,6 +37,7 @@ const $messages    = document.getElementById('messages');
 const $input       = document.getElementById('messageInput');
 const $sendBtn     = document.getElementById('sendBtn');
 const $sidebar     = document.getElementById('sidebar');
+const $overlay     = document.getElementById('sidebarOverlay');
 const $histList    = document.getElementById('conversationList');
 const $headerTitle = document.getElementById('conversationTitle');
 const $modelLabel  = document.getElementById('modelName');
@@ -50,10 +51,14 @@ export function toggleSidebar() {
 function updateSidebar() {
   if (state.sidebarOpen) {
     $sidebar.classList.remove('sidebar--collapsed');
-    if (window.innerWidth <= 768) $sidebar.classList.add('sidebar--open');
+    if (window.innerWidth <= 768) {
+      $sidebar.classList.add('sidebar--open');
+      $overlay.classList.add('sidebar-overlay--visible');
+    }
   } else {
     $sidebar.classList.add('sidebar--collapsed');
     $sidebar.classList.remove('sidebar--open');
+    $overlay.classList.remove('sidebar-overlay--visible');
   }
 }
 

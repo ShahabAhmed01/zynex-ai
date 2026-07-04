@@ -6,7 +6,7 @@ Limits the number of requests per IP address to prevent abuse.
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from fastapi import Request, HTTPException
+from fastapi import Request
 from fastapi.responses import JSONResponse
 
 # Create limiter instance

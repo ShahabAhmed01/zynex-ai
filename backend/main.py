@@ -55,7 +55,7 @@ app.add_middleware(RequestIDMiddleware)
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development
+    allow_origins=["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000"],
     allow_credentials=False,  # Cannot use True with wildcard origin
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -70,8 +70,9 @@ app.include_router(auth.router, prefix="/api")
 # Serve frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 
-@app.get("/")
-async def serve_index():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+if os.path.exists(FRONTEND_DIR):
+    @app.get("/")
+    async def serve_index():
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

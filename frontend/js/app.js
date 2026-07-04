@@ -30,16 +30,12 @@ const $histList    = document.getElementById('conversationList');
 const $headerTitle = document.getElementById('conversationTitle');
 const $modelLabel  = document.getElementById('modelName');
 const $progressBar = document.getElementById('progressBar');
-const $setupBanner = document.getElementById('setup-banner');
-const $activateBtn = document.getElementById('activate-btn');
-const $setupSuccess = document.getElementById('setup-success');
 
 // ── Init ───────────────────────────────────────────────────────────────────
 (function init() {
   renderHistory();
   updateSidebar();
-  checkConfig();
-  handleOAuthCallback();
+  bindModals();
 
   // Auto-resize textarea
   $input.addEventListener('input', () => {
@@ -67,10 +63,23 @@ const $setupSuccess = document.getElementById('setup-success');
   // Mobile: close sidebar on outside tap
   document.addEventListener('click', e => {
     if (window.innerWidth <= 768 && state.sidebarOpen) {
-      if (!$sidebar.contains(e.target) && e.target.id !== 'toggle-sidebar') {
+      if (!$sidebar.contains(e.target) && e.target.id !== 'menuBtn') {
         toggleSidebar();
       }
     }
+  });
+
+  // Sidebar buttons
+  document.getElementById('newChatBtn')?.addEventListener('click', newChat);
+  document.getElementById('clearChatBtn')?.addEventListener('click', clearChat);
+  document.getElementById('menuBtn')?.addEventListener('click', toggleSidebar);
+
+  // Model selector
+  document.getElementById('modelSelector')?.addEventListener('click', cycleModel);
+
+  // Suggestion cards
+  document.querySelectorAll('.welcome__suggestion').forEach(btn => {
+    btn.addEventListener('click', () => useSuggestion(btn.dataset.prompt));
   });
 })();
 
@@ -312,7 +321,7 @@ function stopStream() {
 
 function setStreaming(val) {
   state.isStreaming = val;
-  $sendBtn.classList.toggle('send-btn--loading', val);
+  $sendBtn.classList.toggle('input-area__send--loading', val);
   $sendBtn.disabled = false;
 }
 
@@ -537,99 +546,104 @@ function showToast(message, type = 'info') {
   setTimeout(() => toast.remove(), 3000);
 }
 
-// ── Zero-Config OAuth Flow ─────────────────────────────────────────────────
+// ── Modal Wiring ───────────────────────────────────────────────────────────
+function bindModals() {
+  // Settings modal
+  const $settingsBtn = document.getElementById('settingsBtn');
+  const $settingsModal = document.getElementById('settingsModal');
+  const $closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  const $cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+  const $saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  const $settingsBackdrop = document.getElementById('settingsBackdrop');
 
-async function checkConfig() {
-  try {
-    const resp = await fetch('/api/config');
-    if (!resp.ok) return;
-    const config = await resp.json();
-    $setupBanner.classList.add('setup-banner--visible');
-    if (config.has_api_key) {
-      $activateBtn.style.display = 'none';
-      $setupSuccess.classList.add('setup-banner__success--visible');
-      $setupSuccess.textContent = 'API key configured ✓';
-    }
-  } catch {
-    // Silently ignore
+  function openSettings() {
+    $settingsModal.classList.add('modal--visible');
   }
-}
-
-function activateAI() {
-  const btn = $activateBtn;
-  btn.disabled = true;
-  btn.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite;">
-      <path d="M21 12a9 9 0 11-6.219-8.56"/>
-    </svg>
-    Connecting…
-  `;
-
-  // Build callback URL pointing back to this page
-  const callbackUrl = encodeURIComponent(window.location.origin + '/?oauth=callback');
-
-  // Open OpenRouter auth in a popup
-  const authUrl = `https://openrouter.ai/auth?callback_url=${callbackUrl}`;
-  const popup = window.open(authUrl, 'openrouter_auth', 'width=600,height=700,left=200,top=100');
-
-  // Poll for popup close or message
-  const pollTimer = setInterval(() => {
-    if (popup && popup.closed) {
-      clearInterval(pollTimer);
-      btn.disabled = false;
-      btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-        Activate Free AI
-      `;
-    }
-  }, 500);
-}
-
-async function handleOAuthCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (!code) return;
-
-  // Clean up URL
-  window.history.replaceState({}, document.title, '/');
-
-  // If opened as popup, send code to parent window
-  if (window.opener) {
-    try {
-      await exchangeCode(code);
-      window.opener.onOAuthSuccess();
-    } catch {
-      // ignore
-    }
-    window.close();
-    return;
+  function closeSettings() {
+    $settingsModal.classList.remove('modal--visible');
   }
 
-  // If redirected (not popup), exchange directly
-  await exchangeCode(code);
-  onOAuthSuccess();
-}
-
-async function exchangeCode(code) {
-  const resp = await fetch('/api/auth/callback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
+  $settingsBtn?.addEventListener('click', openSettings);
+  $closeSettingsBtn?.addEventListener('click', closeSettings);
+  $cancelSettingsBtn?.addEventListener('click', closeSettings);
+  $settingsBackdrop?.addEventListener('click', closeSettings);
+  $saveSettingsBtn?.addEventListener('click', () => {
+    showToast('Settings saved', 'success');
+    closeSettings();
   });
 
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to activate');
+  // Export modal
+  const $exportModal = document.getElementById('exportModal');
+  const $closeExportBtn = document.getElementById('closeExportBtn');
+  const $cancelExportBtn = document.getElementById('cancelExportBtn');
+  const $confirmExportBtn = document.getElementById('confirmExportBtn');
+  const $exportBackdrop = document.getElementById('exportBackdrop');
+  let selectedFormat = null;
+
+  function openExport() {
+    selectedFormat = null;
+    $exportModal.classList.add('modal--visible');
+  }
+  function closeExport() {
+    $exportModal.classList.remove('modal--visible');
   }
 
-  return resp.json();
+  $closeExportBtn?.addEventListener('click', closeExport);
+  $cancelExportBtn?.addEventListener('click', closeExport);
+  $exportBackdrop?.addEventListener('click', closeExport);
+
+  document.querySelectorAll('.export-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.export-option').forEach(b => b.classList.remove('button--primary'));
+      btn.classList.add('button--primary');
+      selectedFormat = btn.dataset.format;
+    });
+  });
+
+  $confirmExportBtn?.addEventListener('click', () => {
+    if (!selectedFormat) {
+      showToast('Select an export format', 'error');
+      return;
+    }
+    if (state.messages.length === 0) {
+      showToast('No messages to export', 'error');
+      return;
+    }
+    exportConversation(selectedFormat);
+    closeExport();
+  });
+
+  // Export is available for programmatic use; modal close/option/confirm buttons are wired above
 }
 
-function onOAuthSuccess() {
-  $activateBtn.style.display = 'none';
-  $setupSuccess.classList.add('setup-banner__success--visible');
-  $setupSuccess.textContent = "AI activated — you're all set!";
-  showToast('Free AI activated! No costs, ever.', 'success');
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportConversation(format) {
+  let content = '';
+  const title = $headerTitle.textContent || 'conversation';
+
+  if (format === 'markdown') {
+    content = `# ${title}\n\n`;
+    state.messages.forEach(m => {
+      const role = m.role === 'user' ? '**You**' : '**Zynex**';
+      content += `${role}\n\n${m.content}\n\n---\n\n`;
+    });
+  } else if (format === 'json') {
+    content = JSON.stringify({ title, messages: state.messages }, null, 2);
+  } else {
+    content = `${title}\n\n`;
+    state.messages.forEach(m => {
+      const role = m.role === 'user' ? 'You' : 'Zynex';
+      content += `${role}: ${m.content}\n\n`;
+    });
+  }
+
+  const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/[^a-z0-9]/gi, '_').slice(0, 50)}.${ext}`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exported as ${format}`, 'success');
 }

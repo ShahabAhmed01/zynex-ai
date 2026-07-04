@@ -236,6 +236,11 @@ function handleCodeCopy(btn) {
   const code = btn.dataset.code;
   if (!code) return;
 
+  if (!navigator.clipboard) {
+    showToast('Clipboard not available', 'error');
+    return;
+  }
+
   navigator.clipboard.writeText(code).then(() => {
     btn.classList.add('copied');
     btn.innerHTML = `
@@ -255,6 +260,8 @@ function handleCodeCopy(btn) {
       `;
     }, 2000);
     showToast('Code copied to clipboard', 'success');
+  }).catch(() => {
+    showToast('Failed to copy code', 'error');
   });
 }
 

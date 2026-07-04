@@ -20,16 +20,16 @@ const state = {
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const $chat        = document.getElementById('chat');
-const $welcome     = document.getElementById('welcome');
+const $chat        = document.getElementById('chatArea');
+const $welcome     = document.getElementById('welcomeScreen');
 const $messages    = document.getElementById('messages');
-const $input       = document.getElementById('input');
-const $sendBtn     = document.getElementById('send-btn');
+const $input       = document.getElementById('messageInput');
+const $sendBtn     = document.getElementById('sendBtn');
 const $sidebar     = document.getElementById('sidebar');
-const $histList    = document.getElementById('history-list');
-const $headerTitle = document.getElementById('header-title');
-const $modelLabel  = document.getElementById('model-label');
-const $progressBar = document.getElementById('progress-bar');
+const $histList    = document.getElementById('conversationList');
+const $headerTitle = document.getElementById('conversationTitle');
+const $modelLabel  = document.getElementById('modelName');
+const $progressBar = document.getElementById('progressBar');
 const $setupBanner = document.getElementById('setup-banner');
 const $activateBtn = document.getElementById('activate-btn');
 const $setupSuccess = document.getElementById('setup-success');
@@ -529,7 +529,7 @@ function escHtml(str) {
 
 // ── Toasts ─────────────────────────────────────────────────────────────────
 function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
+  const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast toast--${type}`;
   toast.textContent = message;

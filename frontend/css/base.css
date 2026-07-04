@@ -78,7 +78,7 @@ html {
   --transition-slow: 0.3s ease;
 
   /* Layout */
-  --sidebar-width: 260px;
+  --sidebar-width: 280px;
   --header-height: 56px;
   --input-height: 64px;
 }

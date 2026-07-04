@@ -4,7 +4,7 @@
    ============================================ */
 
 /* ── Buttons ── */
-.btn {
+.button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -18,50 +18,61 @@
   border: none;
   background: none;
   color: inherit;
+  font-family: var(--font-family);
 }
 
-.btn--primary {
+.button--primary {
   background: var(--color-primary);
   color: var(--color-text-inverse);
 }
 
-.btn--primary:hover {
+.button--primary:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
-.btn--secondary {
+.button--secondary {
   background: var(--color-surface-alt);
   color: var(--color-text);
   border: 1px solid var(--color-border);
 }
 
-.btn--secondary:hover {
+.button--secondary:hover {
   background: var(--color-border);
   border-color: var(--color-border-strong);
 }
 
-.btn--ghost {
+.button--ghost {
   background: transparent;
   color: var(--color-text-secondary);
 }
 
-.btn--ghost:hover {
+.button--ghost:hover {
   background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
-.btn--icon {
+.button--icon {
   width: 34px;
   height: 34px;
   padding: 0;
   border-radius: var(--radius-sm);
 }
 
-.btn--icon:hover {
+.button--icon:hover {
   background: var(--color-surface-alt);
 }
+
+/* Backward compat aliases for JS that may reference .btn */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: var(--font-weight-medium); font-size: var(--font-size-base); cursor: pointer; transition: all var(--transition-fast); border: none; background: none; color: inherit; font-family: var(--font-family); }
+.btn--primary { background: var(--color-primary); color: var(--color-text-inverse); }
+.btn--primary:hover { background: var(--color-primary-hover); }
+.btn--secondary { background: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border); }
+.btn--ghost { background: transparent; color: var(--color-text-secondary); }
+.btn--ghost:hover { background: var(--color-surface-alt); color: var(--color-text); }
+.btn--icon { width: 34px; height: 34px; padding: 0; border-radius: var(--radius-sm); }
+.btn--icon:hover { background: var(--color-surface-alt); }
 
 /* ── New Chat Button ── */
 .new-chat-btn {
@@ -90,7 +101,7 @@
   flex-shrink: 0;
 }
 
-/* ── Inputs ── */
+/* ── Inputs (generic) ── */
 .input {
   width: 100%;
   background: var(--color-surface-alt);
@@ -113,6 +124,94 @@
   color: var(--color-text-muted);
 }
 
+/* ── Input Area (BEM) ── */
+.input-area {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+}
+
+.input-area:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+}
+
+.input-area__textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  padding: var(--space-1) var(--space-2);
+  resize: none;
+  max-height: 160px;
+  min-height: 44px;
+  overflow-y: auto;
+}
+
+.input-area__textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-area__send {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  margin: 6px;
+}
+
+.input-area__send:hover {
+  background: var(--color-primary-hover);
+  transform: scale(1.04);
+}
+
+.input-area__send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input-area__send--loading {
+  background: var(--color-surface-alt);
+}
+
+.input-area__hint {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.input-area__hint kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--color-text-secondary);
+}
+
+/* Backward compat aliases */
 .input-box {
   width: 100%;
   background: var(--color-surface-alt);
@@ -270,6 +369,25 @@
 .model-selector:hover {
   border-color: var(--color-border-strong);
   color: var(--color-text);
+}
+
+.model-selector__name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.model-selector:hover .model-selector__name {
+  color: var(--color-text);
+}
+
+.model-selector__status {
+  width: 7px;
+  height: 7px;
+  background: var(--color-success);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
+  flex-shrink: 0;
 }
 
 .model-selector__dot {
@@ -447,4 +565,18 @@
 
 .setup-banner__success--visible {
   display: block;
+}
+
+/* ── Export Options ── */
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.export-option {
+  width: 100%;
+  justify-content: flex-start;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-base);
 }

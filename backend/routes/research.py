@@ -7,9 +7,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
+from backend.middleware.rate_limit import limiter
 from backend.models.schemas import ResearchRequest, JobStatus, ProgressUpdate
 from backend.agents.query_planner import plan_research
 from backend.agents.web_researcher import research_web
@@ -20,7 +18,6 @@ from backend.agents.export_engine import generate_pdf, generate_slides, generate
 from backend.utils.sanitize import sanitize_topic, sanitize_depth
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 # In-memory job storage
 jobs: dict[str, JobStatus] = {}
@@ -112,7 +109,7 @@ async def run_pipeline(job_id: str, topic: str, depth: str):
         jobs[job_id].error = str(e)
         await queue.put(ProgressUpdate(step=6, total_steps=6, stage="failed", message=f"Error: {str(e)}", progress=1.0))
 
-@router.post("/api/research")
+@router.post("/research")
 @limiter.limit("5/minute")
 async def start_research(request: Request, research_request: ResearchRequest, background_tasks: BackgroundTasks):
     # Sanitize inputs to prevent prompt injection
@@ -129,10 +126,10 @@ async def start_research(request: Request, research_request: ResearchRequest, ba
     job_queues[job_id] = asyncio.Queue()
     job_tokens[job_id] = access_token
 
-    background_tasks.add_task(run_pipeline, job_id, research_request.topic, research_request.depth)
+    background_tasks.add_task(run_pipeline, job_id, topic, depth)
     return {"job_id": job_id, "access_token": access_token}
 
-@router.get("/api/research/{job_id}/status")
+@router.get("/research/{job_id}/status")
 async def stream_status(job_id: str, token: str = None):
     if job_id not in job_queues:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -163,7 +160,7 @@ async def stream_status(job_id: str, token: str = None):
         },
     )
 
-@router.get("/api/research/{job_id}/poll")
+@router.get("/research/{job_id}/poll")
 async def poll_job_status(job_id: str, token: str = None):
     """JSON endpoint for polling job status (fallback when SSE fails)."""
     if job_id not in jobs:
@@ -180,7 +177,7 @@ async def poll_job_status(job_id: str, token: str = None):
         "error": job.error,
     }
 
-@router.get("/api/research/{job_id}/report")
+@router.get("/research/{job_id}/report")
 async def get_report(job_id: str, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found or not completed")
@@ -193,7 +190,7 @@ async def get_report(job_id: str, token: str = None):
     report_dict["charts_base64"] = chart_data.get(job_id, {})
     return report_dict
 
-@router.get("/api/research/{job_id}/export/pdf")
+@router.get("/research/{job_id}/export/pdf")
 async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -213,7 +210,7 @@ async def get_export_pdf(job_id: str, background_tasks: BackgroundTasks, token: 
 
     return FileResponse(path, media_type="application/pdf", filename=f"Zynex_Report_{job_id[:8]}.pdf")
 
-@router.get("/api/research/{job_id}/export/slides")
+@router.get("/research/{job_id}/export/slides")
 async def get_export_slides(job_id: str, background_tasks: BackgroundTasks, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -233,7 +230,7 @@ async def get_export_slides(job_id: str, background_tasks: BackgroundTasks, toke
 
     return FileResponse(path, media_type="text/html", filename=f"Zynex_Slides_{job_id[:8]}.html")
 
-@router.get("/api/research/{job_id}/export/docx")
+@router.get("/research/{job_id}/export/docx")
 async def get_export_docx(job_id: str, background_tasks: BackgroundTasks, token: str = None):
     if job_id not in reports:
         raise HTTPException(status_code=404, detail="Report not found")

@@ -6,11 +6,11 @@ from backend.services import llm_client
 router = APIRouter()
 
 
-@router.get("/api/health")
+@router.get("/health")
 async def health_check():
     return {
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "app": "Zynex",
         "demo_mode": settings.demo_mode,
         "llm_model": settings.DEFAULT_MODEL,
@@ -18,7 +18,7 @@ async def health_check():
     }
 
 
-@router.get("/api/health/llm")
+@router.get("/health/llm")
 async def health_llm(verify: bool = Query(False, description="Run a live OpenRouter ping")):
     """LLM status. Pass ?verify=true for a live OpenRouter ping (requires API key)."""
     payload = {

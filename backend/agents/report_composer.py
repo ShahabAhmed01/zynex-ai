@@ -174,7 +174,7 @@ async def compose_report(
             *section_tasks
         )
     except Exception as e:
-        logger.error(f"Error generating report sections: {e}")
+        logger.error("Error generating report sections: %s", e)
         raise
     summary = results[0]
     section_contents = results[1:]

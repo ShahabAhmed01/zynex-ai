@@ -21,8 +21,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     async def dispatch(self, request, call_next):
-        # Generate or extract request ID
-        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        # Always generate server-side request ID
+        request_id = str(uuid.uuid4())
         
         # Add to request state for access in endpoints
         request.state.request_id = request_id

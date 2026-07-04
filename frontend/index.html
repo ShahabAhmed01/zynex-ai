@@ -7,823 +7,28 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:        #0d0d10;
-      --surface:   #16161a;
-      --surface2:  #1e1e24;
-      --border:    rgba(255,255,255,0.07);
-      --border2:   rgba(255,255,255,0.12);
-      --text:      #e8e8ed;
-      --text-dim:  #8a8a9a;
-      --text-mute: #4a4a5a;
-      --accent:    #7c6dfa;
-      --accent2:   #a78bfa;
-      --accent-glow: rgba(124,109,250,0.18);
-      --user-bg:   #1e1d2e;
-      --ai-bg:     transparent;
-      --radius:    14px;
-      --radius-sm: 8px;
-      --font:      'DM Sans', sans-serif;
-      --mono:      'JetBrains Mono', monospace;
-      --sidebar-w: 260px;
-      --header-h:  56px;
-      --input-h:   64px;
-    }
-
-    html, body {
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 15px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── Layout ── */
-    #app {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-    }
-
-    /* ── Sidebar ── */
-    #sidebar {
-      width: var(--sidebar-w);
-      min-width: var(--sidebar-w);
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
-      overflow: hidden;
-      z-index: 10;
-    }
-
-    #sidebar.collapsed {
-      width: 0;
-      min-width: 0;
-      transform: translateX(-100%);
-    }
-
-    .sidebar-header {
-      height: var(--header-h);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .logo-mark {
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
-      flex-shrink: 0;
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-
-    .logo-text {
-      font-weight: 600;
-      font-size: 15px;
-      letter-spacing: -0.2px;
-      color: var(--text);
-      white-space: nowrap;
-    }
-
-    .new-chat-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 12px;
-      padding: 9px 14px;
-      background: var(--accent-glow);
-      border: 1px solid rgba(124,109,250,0.3);
-      border-radius: var(--radius-sm);
-      color: var(--accent2);
-      font-size: 13.5px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      font-family: var(--font);
-    }
-    .new-chat-btn:hover {
-      background: rgba(124,109,250,0.22);
-      border-color: rgba(124,109,250,0.5);
-    }
-    .new-chat-btn svg { flex-shrink: 0; }
-
-    .history-section {
-      padding: 8px 12px 4px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: var(--text-mute);
-    }
-
-    .history-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 4px 8px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border2) transparent;
-    }
-    .history-list::-webkit-scrollbar { width: 4px; }
-    .history-list::-webkit-scrollbar-track { background: transparent; }
-    .history-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-    .history-item {
-      padding: 8px 10px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 13.5px;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .history-item:hover { background: var(--surface2); color: var(--text); }
-    .history-item.active { background: var(--surface2); color: var(--text); }
-    .history-item svg { flex-shrink: 0; opacity: 0.5; }
-
-    .sidebar-footer {
-      border-top: 1px solid var(--border);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .sidebar-footer-btn {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 10px;
-      border-radius: var(--radius-sm);
-      color: var(--text-dim);
-      font-size: 13.5px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .sidebar-footer-btn:hover { background: var(--surface2); color: var(--text); }
-
-    /* ── Main ── */
-    #main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    /* ── Header ── */
-    #header {
-      height: var(--header-h);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      flex-shrink: 0;
-      gap: 12px;
-    }
-
-    .icon-btn {
-      width: 34px;
-      height: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-sm);
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    .icon-btn:hover { background: var(--surface2); color: var(--text); }
-
-    .model-selector {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 13px;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: var(--font);
-    }
-    .model-selector:hover { border-color: var(--border2); color: var(--text); }
-    .model-dot {
-      width: 7px; height: 7px;
-      background: #4ade80;
-      border-radius: 50%;
-      box-shadow: 0 0 5px rgba(74,222,128,0.6);
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .header-title {
-      flex: 1;
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* ── Chat area ── */
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0;
-      scroll-behavior: smooth;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border2) transparent;
-      display: flex;
-      flex-direction: column;
-    }
-    #chat::-webkit-scrollbar { width: 5px; }
-    #chat::-webkit-scrollbar-track { background: transparent; }
-    #chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-    /* Welcome screen */
-    #welcome {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 24px 100px;
-      text-align: center;
-      min-height: 0;
-    }
-
-    .welcome-icon {
-      width: 52px;
-      height: 52px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      margin-bottom: 18px;
-      box-shadow: 0 0 30px var(--accent-glow);
-      animation: float 4s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .welcome-title {
-      font-size: 26px;
-      font-weight: 600;
-      letter-spacing: -0.5px;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    .welcome-sub {
-      font-size: 15px;
-      color: var(--text-dim);
-      max-width: 400px;
-      line-height: 1.6;
-      margin-bottom: 32px;
-    }
-
-    .suggestion-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      max-width: 520px;
-      width: 100%;
-    }
-
-    .suggestion-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.18s ease;
-      font-family: var(--font);
-    }
-    .suggestion-card:hover {
-      border-color: rgba(124,109,250,0.4);
-      background: var(--surface2);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-    .suggestion-card .s-icon {
-      font-size: 18px;
-      margin-bottom: 6px;
-    }
-    .suggestion-card .s-title {
-      font-size: 13.5px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 3px;
-    }
-    .suggestion-card .s-desc {
-      font-size: 12.5px;
-      color: var(--text-dim);
-      line-height: 1.4;
-    }
-
-    /* Messages */
-    #messages {
-      flex: 1;
-      padding: 20px 0 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .message {
-      width: 100%;
-      padding: 16px 0;
-      display: flex;
-      justify-content: center;
-      animation: fadeSlideUp 0.25s ease forwards;
-    }
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .message-inner {
-      width: 100%;
-      max-width: 720px;
-      padding: 0 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .message.user .message-inner {
-      align-items: flex-end;
-    }
-
-    .message-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    .message-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .message.user .message-meta {
-      flex-direction: row-reverse;
-    }
-
-    .message-role {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--text-mute);
-      letter-spacing: 0.3px;
-    }
-
-    .copy-btn {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      margin-left: auto;
-      transition: all 0.15s;
-    }
-    .copy-btn:hover {
-      background: var(--surface2);
-      color: var(--text);
-    }
-
-    .message-bubble {
-      max-width: 85%;
-      font-size: 15px;
-      line-height: 1.7;
-    }
-
-    .message.user .message-bubble {
-      background: var(--user-bg);
-      border: 1px solid rgba(124,109,250,0.2);
-      border-radius: 18px 18px 4px 18px;
-      padding: 12px 18px;
-      color: var(--text);
-    }
-
-    .message.ai .message-bubble {
-      color: var(--text);
-      padding: 4px 0;
-    }
-
-    .message-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-    }
-
-    .copy-btn {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      cursor: pointer;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12.5px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s;
-    }
-    .copy-btn:hover {
-      background: var(--surface);
-      color: var(--text);
-      border-color: var(--border2);
-    }
-
-    /* AI avatar */
-    .ai-avatar {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-    }
-    .user-avatar {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      color: var(--text-dim);
-    }
-
-    /* Code blocks */
-    .message-bubble pre {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      overflow-x: auto;
-      margin: 10px 0;
-      font-family: var(--mono);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .message-bubble code {
-      font-family: var(--mono);
-      font-size: 13px;
-      background: var(--surface2);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: var(--accent2);
-    }
-    .message-bubble pre code {
-      background: none;
-      padding: 0;
-      color: var(--text);
-    }
-
-    /* Typing indicator */
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 14px 0 4px;
-    }
-    .typing-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent2);
-      opacity: 0.4;
-      animation: blink 1.2s ease-in-out infinite;
-    }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes blink {
-      0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
-      40% { opacity: 1; transform: scale(1.1); }
-    }
-
-    /* Streaming text cursor */
-    .stream-cursor {
-      display: inline-block;
-      width: 2px;
-      height: 1em;
-      background: var(--accent2);
-      vertical-align: text-bottom;
-      margin-left: 2px;
-      animation: cursor-blink 0.7s ease-in-out infinite;
-    }
-    @keyframes cursor-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    /* ── Input area ── */
-    #input-area {
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      padding: 12px 20px 14px;
-      flex-shrink: 0;
-    }
-
-    .input-wrapper {
-      max-width: 720px;
-      margin: 0 auto;
-      position: relative;
-    }
-
-    .input-box {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      display: flex;
-      align-items: flex-end;
-      gap: 0;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      overflow: hidden;
-    }
-    .input-box:focus-within {
-      border-color: rgba(124,109,250,0.5);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
-    #input {
-      flex: 1;
-      background: none;
-      border: none;
-      outline: none;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 15px;
-      line-height: 1.5;
-      padding: 14px 16px;
-      resize: none;
-      max-height: 160px;
-      min-height: 52px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-    }
-    #input::placeholder { color: var(--text-mute); }
-
-    .input-actions {
-      display: flex;
-      align-items: flex-end;
-      padding: 10px 12px 10px 0;
-      gap: 6px;
-    }
-
-    #send-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      border: none;
-      background: var(--accent);
-      color: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    #send-btn:hover { background: var(--accent2); transform: scale(1.04); }
-    #send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-    #send-btn.loading {
-      background: var(--surface2);
-    }
-    .stop-icon { display: none; }
-    #send-btn.loading .send-icon { display: none; }
-    #send-btn.loading .stop-icon { display: block; }
-
-    /* ── Progress bar ── */
-    #progress-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 2px;
-      width: 0%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      z-index: 9999;
-      transition: width 0.3s ease;
-      box-shadow: 0 0 8px var(--accent);
-      display: none;
-    }
-    #progress-bar.active {
-      display: block;
-    }
-
-    /* ── Scrollbar for chat ── */
-    #chat {
-      scrollbar-width: thin;
-      scrollbar-color: var(--border2) transparent;
-    }
-
-    /* ── Toasts ── */
-    #toast-container {
-      position: fixed;
-      bottom: 80px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 9999;
-    }
-    .toast {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: 13.5px;
-      color: var(--text);
-      animation: toast-in 0.2s ease;
-      max-width: 280px;
-    }
-    @keyframes toast-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .toast.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
-    .toast.success { border-color: rgba(74,222,128,0.4); color: #86efac; }
-
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      #sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100%;
-        transform: translateX(-100%);
-        width: 280px;
-        min-width: 280px;
-      }
-      #sidebar.open {
-        transform: translateX(0);
-        box-shadow: 4px 0 30px rgba(0,0,0,0.5);
-      }
-      #sidebar.collapsed {
-        width: 280px;
-        min-width: 280px;
-        transform: translateX(-100%);
-      }
-      .suggestion-grid {
-        grid-template-columns: 1fr;
-      }
-      .message-inner {
-        padding: 0 16px;
-      }
-      #input-area {
-        padding: 10px 12px 12px;
-      }
-    }
-
-    /* ── Key input states ── */
-    .input-hint {
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-mute);
-      margin-top: 8px;
-    }
-    .input-hint kbd {
-      font-family: var(--mono);
-      font-size: 11px;
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 4px;
-      padding: 1px 5px;
-      color: var(--text-dim);
-    }
-
-    /* ── Setup Banner ── */
-    #setup-banner {
-      display: none;
-      background: linear-gradient(135deg, rgba(124,109,250,0.12), rgba(167,139,250,0.08));
-      border: 1px solid rgba(124,109,250,0.25);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      margin: 16px 20px;
-      text-align: center;
-      animation: fadeSlideUp 0.35s ease forwards;
-    }
-    #setup-banner.visible { display: block; }
-    .setup-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .setup-desc {
-      font-size: 13px;
-      color: var(--text-dim);
-      margin-bottom: 14px;
-      line-height: 1.5;
-    }
-    .setup-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 22px;
-      background: var(--accent);
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: all 0.18s ease;
-      box-shadow: 0 2px 12px rgba(124,109,250,0.3);
-    }
-    .setup-btn:hover {
-      background: var(--accent2);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(124,109,250,0.4);
-    }
-    .setup-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .setup-badge {
-      display: inline-block;
-      background: rgba(74,222,128,0.15);
-      border: 1px solid rgba(74,222,128,0.3);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-size: 11px;
-      color: #86efac;
-      font-weight: 600;
-      margin-left: 6px;
-    }
-    .setup-success {
-      display: none;
-      color: #86efac;
-      font-size: 14px;
-      font-weight: 500;
-      padding: 12px 0 4px;
-    }
-    .setup-success.visible { display: block; }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/chat.css" />
+  <link rel="stylesheet" href="css/animations.css" />
 </head>
 <body>
 
 <!-- Progress bar -->
-<div id="progress-bar"></div>
+<div class="progress-bar" id="progress-bar"></div>
 
 <!-- Toast container -->
-<div id="toast-container"></div>
+<div class="toast-container" id="toast-container"></div>
 
-<div id="app">
+<div class="app" id="app">
 
   <!-- Sidebar -->
-  <aside id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-mark">Z</div>
-      <span class="logo-text">Zynex</span>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__header">
+      <div class="sidebar__logo">Z</div>
+      <span class="sidebar__logo-text">Zynex</span>
     </div>
 
     <button class="new-chat-btn" onclick="newChat()">
@@ -838,7 +43,7 @@
       <!-- populated by JS -->
     </div>
 
-    <div class="sidebar-footer">
+    <div class="sidebar__footer">
       <div class="sidebar-footer-btn" onclick="showToast('Settings coming soon', 'info')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -855,42 +60,42 @@
   </aside>
 
   <!-- Main -->
-  <main id="main">
+  <main class="main" id="main">
 
     <!-- Setup Banner (shown when no API key is configured) -->
-    <div id="setup-banner">
-      <div class="setup-title">Activate Free AI <span class="setup-badge">FREE</span></div>
-      <div class="setup-desc">
+    <div class="setup-banner" id="setup-banner">
+      <div class="setup-banner__title">Activate Free AI <span class="setup-banner__badge">FREE</span></div>
+      <div class="setup-banner__desc">
         One click connects you to powerful AI models (Gemini, Llama, DeepSeek) — completely free, forever.
       </div>
-      <button class="setup-btn" id="activate-btn" onclick="activateAI()">
+      <button class="setup-banner__btn" id="activate-btn" onclick="activateAI()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
         </svg>
         Activate Free AI
       </button>
-      <div class="setup-success" id="setup-success">AI activated — you're all set!</div>
+      <div class="setup-banner__success" id="setup-success">AI activated — you're all set!</div>
     </div>
 
     <!-- Header -->
-    <header id="header">
-      <button class="icon-btn" id="toggle-sidebar" onclick="toggleSidebar()" title="Toggle sidebar">
+    <header class="header" id="header">
+      <button class="btn btn--icon" id="toggle-sidebar" onclick="toggleSidebar()" title="Toggle sidebar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
 
-      <div class="header-title" id="header-title">New conversation</div>
+      <div class="header__title" id="header-title">New conversation</div>
 
       <div class="model-selector" id="model-btn" onclick="cycleModel()">
-        <div class="model-dot"></div>
+        <div class="model-selector__dot animate-pulse"></div>
         <span id="model-label">Gemini 2.0 (Free)</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </div>
 
-      <button class="icon-btn" onclick="clearChat()" title="Clear chat">
+      <button class="btn btn--icon" onclick="clearChat()" title="Clear chat">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
         </svg>
@@ -898,43 +103,43 @@
     </header>
 
     <!-- Chat -->
-    <div id="chat">
+    <div class="chat" id="chat">
       <!-- Welcome -->
-      <div id="welcome">
-        <div class="welcome-icon">✦</div>
-        <h1 class="welcome-title">How can I help you today?</h1>
-        <p class="welcome-sub">Ask anything — I'll analyze, generate, explain, and create. Powered by the latest AI models.</p>
-        <div class="suggestion-grid">
+      <div class="welcome" id="welcome">
+        <div class="welcome__icon animate-float">✦</div>
+        <h1 class="welcome__title">How can I help you today?</h1>
+        <p class="welcome__subtitle">Ask anything — I'll analyze, generate, explain, and create. Powered by the latest AI models.</p>
+        <div class="suggestions">
           <div class="suggestion-card" onclick="useSuggestion('Explain how neural networks learn through backpropagation')">
-            <div class="s-icon">🧠</div>
-            <div class="s-title">Explain AI concepts</div>
-            <div class="s-desc">How neural networks learn through backpropagation</div>
+            <div class="suggestion-card__icon">🧠</div>
+            <div class="suggestion-card__title">Explain AI concepts</div>
+            <div class="suggestion-card__desc">How neural networks learn through backpropagation</div>
           </div>
           <div class="suggestion-card" onclick="useSuggestion('Write a Python FastAPI endpoint with JWT authentication')">
-            <div class="s-icon">⚡</div>
-            <div class="s-title">Generate code</div>
-            <div class="s-desc">FastAPI endpoint with JWT authentication</div>
+            <div class="suggestion-card__icon">⚡</div>
+            <div class="suggestion-card__title">Generate code</div>
+            <div class="suggestion-card__desc">FastAPI endpoint with JWT authentication</div>
           </div>
           <div class="suggestion-card" onclick="useSuggestion('Summarize the key differences between REST and GraphQL APIs')">
-            <div class="s-icon">📖</div>
-            <div class="s-title">Compare & summarize</div>
-            <div class="s-desc">Key differences between REST and GraphQL</div>
+            <div class="suggestion-card__icon">📖</div>
+            <div class="suggestion-card__title">Compare & summarize</div>
+            <div class="suggestion-card__desc">Key differences between REST and GraphQL</div>
           </div>
           <div class="suggestion-card" onclick="useSuggestion('Help me debug: my Python async function is blocking the event loop')">
-            <div class="s-icon">🔍</div>
-            <div class="s-title">Debug & analyze</div>
-            <div class="s-desc">Fix async function blocking the event loop</div>
+            <div class="suggestion-card__icon">🔍</div>
+            <div class="suggestion-card__title">Debug & analyze</div>
+            <div class="suggestion-card__desc">Fix async function blocking the event loop</div>
           </div>
         </div>
       </div>
 
       <!-- Messages -->
-      <div id="messages" style="display:none;"></div>
+      <div class="messages" id="messages" style="display:none;"></div>
     </div>
 
     <!-- Input -->
-    <div id="input-area">
-      <div class="input-wrapper">
+    <div class="input-area" id="input-area">
+      <div class="input-area__wrapper">
         <div class="input-box">
           <textarea
             id="input"
@@ -944,7 +149,7 @@
             spellcheck="true"
           ></textarea>
           <div class="input-actions">
-            <button id="send-btn" title="Send (Enter)" disabled>
+            <button class="send-btn" id="send-btn" title="Send (Enter)" disabled>
               <svg class="send-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
@@ -954,11 +159,11 @@
             </button>
           </div>
         </div>
-        <div class="input-hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line</div>
+        <div class="input-area__hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line</div>
       </div>
     </div>
 
-    <footer style="text-align:center;padding:12px 20px;font-size:12px;color:var(--text-mute);border-top:1px solid var(--border);background:var(--bg);flex-shrink:0;">
+    <footer class="footer">
       Made by Shahab Ahmed
     </footer>
 

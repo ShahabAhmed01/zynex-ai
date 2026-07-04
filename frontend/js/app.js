@@ -82,11 +82,11 @@ function toggleSidebar() {
 
 function updateSidebar() {
   if (state.sidebarOpen) {
-    $sidebar.classList.remove('collapsed');
-    if (window.innerWidth <= 768) $sidebar.classList.add('open');
+    $sidebar.classList.remove('sidebar--collapsed');
+    if (window.innerWidth <= 768) $sidebar.classList.add('sidebar--open');
   } else {
-    $sidebar.classList.add('collapsed');
-    $sidebar.classList.remove('open');
+    $sidebar.classList.add('sidebar--collapsed');
+    $sidebar.classList.remove('sidebar--open');
   }
 }
 
@@ -148,12 +148,12 @@ function saveConversation() {
 function renderHistory() {
   $histList.innerHTML = '';
   if (state.conversations.length === 0) {
-    $histList.innerHTML = '<div style="padding:10px 10px;font-size:13px;color:var(--text-mute)">No conversations yet</div>';
+    $histList.innerHTML = '<div style="padding:10px 10px;font-size:13px;color:var(--color-text-muted)">No conversations yet</div>';
     return;
   }
   state.conversations.forEach(conv => {
     const el = document.createElement('div');
-    el.className = 'history-item' + (conv.id === state.currentId ? ' active' : '');
+    el.className = 'history-item' + (conv.id === state.currentId ? ' history-item--active' : '');
     el.innerHTML = `
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -206,8 +206,8 @@ async function send() {
 
   // Add AI message placeholder
   const aiMsgEl = appendMessage({ role: 'ai', content: '' });
-  const bubble = aiMsgEl.querySelector('.message-bubble');
-  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  const bubble = aiMsgEl.querySelector('.message__bubble');
+  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div></div>';
 
   state.controller = new AbortController();
 
@@ -262,7 +262,7 @@ async function send() {
                        || '';
             if (delta) {
               fullContent += delta;
-              bubble.innerHTML = renderMarkdown(fullContent) + '<span class="stream-cursor"></span>';
+              bubble.innerHTML = renderMarkdown(fullContent) + '<span class="stream-cursor animate-cursor-blink"></span>';
               scrollToBottom();
             }
           } catch {
@@ -277,9 +277,9 @@ async function send() {
 
     // Append a "done" follow-up hint below the bubble
     const followUp = document.createElement('div');
-    followUp.style.cssText = 'margin-top:10px;font-size:12.5px;color:var(--text-mute);font-style:italic;';
+    followUp.style.cssText = 'margin-top:10px;font-size:12.5px;color:var(--color-text-muted);font-style:italic;';
     followUp.textContent = 'Is there anything else you would like to know?';
-    aiMsgEl.querySelector('.message-inner').appendChild(followUp);
+    aiMsgEl.querySelector('.message__inner').appendChild(followUp);
 
     state.messages.push({ role: 'assistant', content: fullContent });
     saveConversation();
@@ -291,7 +291,7 @@ async function send() {
       bubble.innerHTML = `
         <div style="color:#fca5a5;padding:10px 0;">
           ⚠ <strong>Search failed.</strong> Could not get a response from the AI.<br>
-          <span style="font-size:13px;color:var(--text-dim);margin-top:4px;display:block;">
+          <span style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;display:block;">
             Please try again. If the problem continues, reload the page.
           </span>
         </div>
@@ -312,7 +312,7 @@ function stopStream() {
 
 function setStreaming(val) {
   state.isStreaming = val;
-  $sendBtn.classList.toggle('loading', val);
+  $sendBtn.classList.toggle('send-btn--loading', val);
   $sendBtn.disabled = false;
 }
 
@@ -321,7 +321,7 @@ let progressInterval = null;
 let progressVal = 0;
 
 function showProgress() {
-  $progressBar.classList.add('active');
+  $progressBar.classList.add('progress-bar--active');
   progressVal = 0;
   $progressBar.style.width = '0%';
   progressInterval = setInterval(() => {
@@ -335,7 +335,7 @@ function hideProgress() {
   clearInterval(progressInterval);
   $progressBar.style.width = '100%';
   setTimeout(() => {
-    $progressBar.classList.remove('active');
+    $progressBar.classList.remove('progress-bar--active');
     $progressBar.style.width = '0%';
   }, 400);
 }
@@ -346,19 +346,19 @@ function appendMessage({ role, content }) {
   const isAi   = role === 'ai' || role === 'assistant';
 
   const wrap = document.createElement('div');
-  wrap.className = `message ${isUser ? 'user' : 'ai'}`;
+  wrap.className = `message message--${isUser ? 'user' : 'ai'} animate-fade-slide-up`;
 
   wrap.innerHTML = `
-    <div class="message-inner">
-      <div class="message-meta">
-        <div class="message-avatar ${isUser ? 'user-avatar' : 'ai-avatar'}">
+    <div class="message__inner">
+      <div class="message__meta">
+        <div class="message__avatar message__avatar--${isUser ? 'user' : 'ai'}">
           ${isUser ? '👤' : '✦'}
         </div>
-        <span class="message-role">${isUser ? 'You' : 'Zynex'}</span>
+        <span class="message__role">${isUser ? 'You' : 'Zynex'}</span>
       </div>
-      <div class="message-bubble">${isUser ? escHtml(content) : renderMarkdown(content)}</div>
+      <div class="message__bubble">${isUser ? escHtml(content) : renderMarkdown(content)}</div>
       ${isAi ? `
-        <div class="message-actions">
+        <div class="message__actions">
           <button class="copy-btn" onclick="copyMessage(this)" title="Copy response">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -377,7 +377,7 @@ function appendMessage({ role, content }) {
 }
 
 function copyMessage(btn) {
-  const bubble = btn.closest('.message-inner').querySelector('.message-bubble');
+  const bubble = btn.closest('.message__inner').querySelector('.message__bubble');
   const text = bubble.textContent;
   navigator.clipboard.writeText(text).then(() => {
     showToast('Copied to clipboard', 'success');
@@ -417,16 +417,16 @@ function renderMarkdown(text) {
   // Strip LaTeX delimiters and clean up broken LaTeX
   // Handle both escaped \\( and unescaped \( patterns
   html = html.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
-    return `<div style="background:var(--surface);padding:12px;border-radius:8px;margin:10px 0;font-family:var(--mono);font-size:13px;overflow-x:auto;border:1px solid var(--border);">${formatLatex(math)}</div>`;
+    return `<div style="background:var(--color-surface-alt);padding:12px;border-radius:8px;margin:10px 0;font-family:'JetBrains Mono',monospace;font-size:13px;overflow-x:auto;border:1px solid var(--color-border);">${formatLatex(math)}</div>`;
   });
 
   html = html.replace(/\\\(([^)]+?)\\\)/g, (_, math) => {
-    return `<code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;">${formatLatex(math)}</code>`;
+    return `<code style="background:var(--color-surface-alt);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;">${formatLatex(math)}</code>`;
   });
 
   // Handle unescaped \( ... \) patterns
   html = html.replace(/\(([^)]*\\[a-zA-Z]+[^)]*)\)/g, (_, math) => {
-    return `<code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;">${formatLatex(math)}</code>`;
+    return `<code style="background:var(--color-surface-alt);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;">${formatLatex(math)}</code>`;
   });
 
   // Handle any remaining \( or \) patterns (both escaped and unescaped)
@@ -453,13 +453,13 @@ function renderMarkdown(text) {
   html = html.replace(/^# (.+)$/gm, '<h1 style="font-size:20px;font-weight:700;margin:16px 0 8px;">$1</h1>');
 
   // Ordered list
-  html = html.replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--text-mute);min-width:18px">$1.</span><span>$2</span></div>');
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--color-text-muted);min-width:18px">$1.</span><span>$2</span></div>');
 
   // Unordered list
-  html = html.replace(/^[-*] (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--accent2);min-width:12px">•</span><span>$1</span></div>');
+  html = html.replace(/^[-*] (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--color-primary);min-width:12px">•</span><span>$1</span></div>');
 
   // Horizontal rule
-  html = html.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+  html = html.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--color-border);margin:12px 0">');
 
   // Line breaks
   html = html.replace(/\n/g, '<br>');
@@ -531,7 +531,7 @@ function escHtml(str) {
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
+  toast.className = `toast toast--${type}`;
   toast.textContent = message;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
@@ -544,10 +544,10 @@ async function checkConfig() {
     const resp = await fetch('/api/config');
     if (!resp.ok) return;
     const config = await resp.json();
-    $setupBanner.classList.add('visible');
+    $setupBanner.classList.add('setup-banner--visible');
     if (config.has_api_key) {
       $activateBtn.style.display = 'none';
-      $setupSuccess.classList.add('visible');
+      $setupSuccess.classList.add('setup-banner__success--visible');
       $setupSuccess.textContent = 'API key configured ✓';
     }
   } catch {
@@ -629,7 +629,7 @@ async function exchangeCode(code) {
 
 function onOAuthSuccess() {
   $activateBtn.style.display = 'none';
-  $setupSuccess.classList.add('visible');
+  $setupSuccess.classList.add('setup-banner__success--visible');
   $setupSuccess.textContent = "AI activated — you're all set!";
   showToast('Free AI activated! No costs, ever.', 'success');
 }

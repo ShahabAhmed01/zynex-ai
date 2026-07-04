@@ -1,0 +1,203 @@
+/* ============================================
+   Zynex AI — Chat Styles
+   Chat interface specific styles
+   ============================================ */
+
+/* ── Message Container ── */
+.message {
+  width: 100%;
+  padding: var(--space-2) 0;
+  display: flex;
+  justify-content: center;
+}
+
+.message__inner {
+  width: 100%;
+  max-width: 720px;
+  padding: 0 var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.message--user .message__inner {
+  align-items: flex-end;
+}
+
+/* ── Message Avatar ── */
+.message__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.message__avatar--ai {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-inverse);
+}
+
+.message__avatar--user {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+/* ── Message Meta ── */
+.message__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.message--user .message__meta {
+  flex-direction: row-reverse;
+}
+
+.message__role {
+  font-size: 12.5px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.3px;
+}
+
+/* ── Message Bubble ── */
+.message__bubble {
+  max-width: 85%;
+  font-size: var(--font-size-md);
+  line-height: 1.7;
+}
+
+.message--user .message__bubble {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 18px;
+  color: var(--color-text);
+}
+
+.message--ai .message__bubble {
+  color: var(--color-text);
+  padding: 4px 0;
+}
+
+/* ── Message Actions ── */
+.message__actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.copy-btn {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.copy-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+/* ── Code Blocks ── */
+.message__bubble pre {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.message__bubble code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--color-surface-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-primary);
+}
+
+.message__bubble pre code {
+  background: none;
+  padding: 0;
+  color: var(--color-text);
+}
+
+/* ── Typing Indicator ── */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0 4px;
+}
+
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0.4;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* ── Streaming Cursor ── */
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--color-primary);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+}
+
+/* ── Welcome Icon ── */
+.welcome__icon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: var(--space-2);
+  box-shadow: 0 0 30px rgba(74, 144, 217, 0.18);
+}
+
+/* ── Responsive Chat Styles ── */
+@media (max-width: 768px) {
+  .message__inner {
+    padding: 0 var(--space-2);
+  }
+
+  .message__bubble {
+    max-width: 95%;
+  }
+}

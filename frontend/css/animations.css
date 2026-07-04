@@ -1,0 +1,202 @@
+/* ============================================
+   Zynex AI — Animation Styles
+   All animations and transitions
+   ============================================ */
+
+/* ── Keyframe Animations ── */
+
+/* Fade in and slide up */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse effect for dots */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Typing dots blink */
+@keyframes blink {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Streaming cursor blink */
+@keyframes cursorBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Float animation for welcome icon */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast slide in */
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide in from left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Animation Classes ── */
+
+/* Apply fade slide up to messages */
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.25s ease forwards;
+}
+
+/* Apply float to welcome icon */
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Apply pulse to model dot */
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Apply blink to typing dots */
+.animate-blink {
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+/* Apply cursor blink to streaming cursor */
+.animate-cursor-blink {
+  animation: cursorBlink 0.7s ease-in-out infinite;
+}
+
+/* Apply spin to loading elements */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Apply toast in animation */
+.animate-toast-in {
+  animation: toastIn 0.2s ease;
+}
+
+/* Apply scale in animation */
+.animate-scale-in {
+  animation: scaleIn 0.2s ease forwards;
+}
+
+/* Apply slide in from left */
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease forwards;
+}
+
+/* Apply slide in from right */
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease forwards;
+}
+
+/* ── Transition Utilities ── */
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Hover glow effect */
+.hover-glow {
+  transition: box-shadow var(--transition-fast);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(74, 144, 217, 0.3);
+}
+
+/* Smooth color transition */
+.transition-colors {
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

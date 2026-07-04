@@ -268,9 +268,7 @@
   border-radius: 50%;
 }
 
-/* Skeleton loading */
-  animation: progressGradient 1.5s linear infinite;
-}
+
 
 /* Spinner with brand color */
 .spinner {

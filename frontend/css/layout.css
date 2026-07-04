@@ -233,47 +233,6 @@
   min-height: 0;
 }
 
-/* ── Suggestion Grid ── */
-.welcome__suggestions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-1);
-  max-width: 520px;
-  width: 100%;
-}
-
-/* ── Welcome Suggestion Card ── */
-.welcome__suggestion {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  cursor: pointer;
-  text-align: left;
-  transition: all var(--transition-fast);
-  font-family: var(--font-family);
-}
-
-.welcome__suggestion:hover {
-  border-color: rgba(74, 144, 217, 0.4);
-  background: var(--color-surface-alt);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-}
-
-.welcome__suggestion-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.welcome__suggestion-text {
-  font-size: 13.5px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
 
 /* ── Input Area (outer wrapper, below main__content) ── */
 .main__input {
@@ -555,12 +514,6 @@
   .welcome {
     padding: var(--space-4) var(--space-2) 120px;
     min-height: auto;
-  }
-
-  .welcome__suggestions {
-    grid-template-columns: 1fr;
-    max-width: 100%;
-    padding: 0 var(--space-1);
   }
 
   .welcome__title {

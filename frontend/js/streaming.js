@@ -1,5 +1,5 @@
 /**
- * Streaming â€” SSE streaming handler
+ * Streaming — SSE streaming handler
  */
 
 export async function streamChat({ messages, model, signal, onChunk, onDone, onError }) {
@@ -20,13 +20,15 @@ export async function streamChat({ messages, model, signal, onChunk, onDone, onE
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
+    let buffer = '';
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // Keep incomplete last line in buffer
 
       for (const line of lines) {
         if (line.startsWith('data: ')) {
@@ -44,6 +46,31 @@ export async function streamChat({ messages, model, signal, onChunk, onDone, onE
             }
           } catch {
             // Ignore parse errors on partial chunks
+          }
+        }
+      }
+    }
+
+    // Process any remaining data in buffer
+    if (buffer.trim()) {
+      const lines = buffer.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data !== '[DONE]') {
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices?.[0]?.delta?.content
+                         || json.content
+                         || json.text
+                         || '';
+              if (delta) {
+                fullContent += delta;
+                onChunk(fullContent);
+              }
+            } catch {
+              // Ignore parse errors on partial chunks
+            }
           }
         }
       }

@@ -357,9 +357,6 @@
   border-radius: 50%;
   background: var(--color-primary);
 }
-    transform: translateY(-4px);
-  }
-}
 
 /* ── Streaming Cursor ── */
 .stream-cursor {
@@ -426,6 +423,13 @@
   text-align: left;
   font-family: var(--font-family);
   cursor: pointer;
+}
+
+.welcome__suggestion:hover {
+  border-color: rgba(74, 144, 217, 0.4);
+  background: var(--color-surface-alt);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
 }
 
 .welcome__suggestion-icon {

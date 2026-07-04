@@ -90,6 +90,12 @@ const $overlay = document.getElementById('sidebarOverlay');
 
   // Model selector
   document.getElementById('modelSelector')?.addEventListener('click', cycleModel);
+  document.getElementById('modelSelector')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      cycleModel();
+    }
+  });
 
   // Suggestion cards
   document.querySelectorAll('.welcome__suggestion').forEach(btn => {

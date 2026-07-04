@@ -251,87 +251,6 @@
   color: var(--color-success);
 }
 
-/* ── Setup Banner ── */
-.setup-banner {
-  display: none;
-  background: linear-gradient(135deg, rgba(74, 144, 217, 0.12), rgba(107, 181, 255, 0.08));
-  border: 1px solid rgba(74, 144, 217, 0.25);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  margin: var(--space-2);
-  text-align: center;
-}
-
-.setup-banner--visible {
-  display: block;
-}
-
-.setup-banner__title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  margin-bottom: 6px;
-}
-
-.setup-banner__desc {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-2);
-  line-height: 1.5;
-}
-
-.setup-banner__badge {
-  display: inline-block;
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: var(--radius-sm);
-  padding: 2px 8px;
-  font-size: 11px;
-  color: var(--color-success);
-  font-weight: var(--font-weight-semibold);
-  margin-left: 6px;
-}
-
-.setup-banner__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 10px 22px;
-  background: var(--color-primary);
-  border: none;
-  border-radius: 10px;
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  font-family: var(--font-family);
-  transition: all var(--anim-fast) var(--ease-smooth);
-  box-shadow: 0 2px 12px rgba(74, 144, 217, 0.3);
-}
-
-.setup-banner__btn:hover {
-  background: var(--color-primary-hover);
-  transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(74, 144, 217, 0.4);
-}
-
-.setup-banner__btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.setup-banner__success {
-  display: none;
-  color: var(--color-success);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  padding: 12px 0 4px;
-}
-
-.setup-banner__success--visible {
-  display: block;
-}
 
 /* ── Modal Enhancements ── */
 
@@ -481,23 +400,6 @@
   border-color: var(--color-primary);
 }
 
-/* ── Settings Modal Specific ── */
-.settings-section {
-  margin-bottom: var(--space-3);
-}
-
-.settings-section:last-child {
-  margin-bottom: 0;
-}
-
-.settings-section__title {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: var(--space-2);
-}
 
 /* ── Modal Footer Actions ── */
 .modal__footer .button {

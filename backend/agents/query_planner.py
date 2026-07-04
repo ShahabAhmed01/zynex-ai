@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from typing import Any
 
 from backend.services import llm_client
@@ -53,7 +54,7 @@ def _default_plan(topic: str, depth: str) -> dict[str, Any]:
     query_count = _DEPTH_QUERY_COUNT.get(depth, 6)
     all_queries = [
         f"{topic} overview definition",
-        f"{topic} latest news 2025 2026",
+        f"{topic} latest news {datetime.now().year}",
         f"{topic} statistics data research",
         f"{topic} expert analysis opinions",
         f"{topic} challenges problems limitations",
@@ -121,7 +122,6 @@ async def plan_research(topic: str, depth: str = "standard") -> dict[str, Any]:
         plan = _default_plan(topic, depth)
     else:
         # Ensure counts match depth
-        expected_queries = _DEPTH_QUERY_COUNT.get(depth, 6)
         if len(plan.get("queries", [])) < 3:
             plan = _default_plan(topic, depth)
 

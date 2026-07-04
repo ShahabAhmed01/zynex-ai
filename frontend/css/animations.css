@@ -3,6 +3,15 @@
    All animations and transitions
    ============================================ */
 
+/* ── Timing Tokens ── */
+:root {
+  --anim-fast: 150ms;
+  --anim-normal: 250ms;
+  --anim-slow: 400ms;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* ── Keyframe Animations ── */
 
 /* Fade in and slide up */
@@ -17,7 +26,7 @@
   }
 }
 
-/* Pulse effect for dots */
+/* Pulse effect for skeleton placeholders */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -27,7 +36,7 @@
   }
 }
 
-/* Typing dots blink */
+/* Typing dots staggered bounce */
 @keyframes blink {
   0%, 80%, 100% {
     opacity: 0.2;
@@ -36,6 +45,17 @@
   40% {
     opacity: 1;
     transform: scale(1.1);
+  }
+}
+
+@keyframes typingDotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
   }
 }
 
@@ -114,11 +134,57 @@
   }
 }
 
+/* Skeleton pulse for content placeholders */
+@keyframes skeletonPulse {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Progress bar gradient sweep */
+@keyframes progressGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Spinner rotation with brand color */
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* View cross-fade */
+@keyframes crossFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crossFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* ── Animation Classes ── */
 
 /* Apply fade slide up to messages */
 .animate-fade-slide-up {
-  animation: fadeSlideUp 0.25s ease forwards;
+  animation: fadeSlideUp var(--anim-normal) var(--ease-smooth) forwards;
 }
 
 /* Apply float to welcome icon */
@@ -136,6 +202,11 @@
   animation: blink 1.2s ease-in-out infinite;
 }
 
+/* Staggered typing dots (3 dots with delay) */
+.typing-dot:nth-child(1) { animation: typingDotBounce 1.2s ease-in-out 0s infinite; }
+.typing-dot:nth-child(2) { animation: typingDotBounce 1.2s ease-in-out 0.15s infinite; }
+.typing-dot:nth-child(3) { animation: typingDotBounce 1.2s ease-in-out 0.3s infinite; }
+
 /* Apply cursor blink to streaming cursor */
 .animate-cursor-blink {
   animation: cursorBlink 0.7s ease-in-out infinite;
@@ -148,29 +219,116 @@
 
 /* Apply toast in animation */
 .animate-toast-in {
-  animation: toastIn 0.2s ease;
+  animation: toastIn var(--anim-normal) var(--ease-smooth);
 }
 
 /* Apply scale in animation */
 .animate-scale-in {
-  animation: scaleIn 0.2s ease forwards;
+  animation: scaleIn var(--anim-normal) var(--ease-smooth) forwards;
 }
 
 /* Apply slide in from left */
 .animate-slide-in-left {
-  animation: slideInLeft 0.3s ease forwards;
+  animation: slideInLeft var(--anim-slow) var(--ease-smooth) forwards;
 }
 
 /* Apply slide in from right */
 .animate-slide-in-right {
-  animation: slideInRight 0.3s ease forwards;
+  animation: slideInRight var(--anim-slow) var(--ease-smooth) forwards;
+}
+
+/* ── Loading States ── */
+
+/* Skeleton loading placeholder */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-border) 37%,
+    var(--color-surface-alt) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--text {
+  height: 14px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.skeleton--text:last-child {
+  width: 60%;
+}
+
+.skeleton--avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+/* Progress bar for streaming */
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--color-surface-alt);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    rgba(107, 181, 255, 0.8),
+    var(--color-primary)
+  );
+  background-size: 200% 100%;
+  border-radius: 2px;
+  animation: progressGradient 1.5s linear infinite;
+}
+
+/* Spinner with brand color */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spinnerRotate 0.8s linear infinite;
+}
+
+.spinner--sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.spinner--lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* ── View Transitions ── */
+
+/* Cross-fade for view changes */
+.view-fade-enter {
+  animation: crossFadeIn var(--anim-slow) var(--ease-smooth) forwards;
+}
+
+.view-fade-exit {
+  animation: crossFadeOut var(--anim-normal) var(--ease-smooth) forwards;
 }
 
 /* ── Transition Utilities ── */
 
 /* Hover lift effect */
 .hover-lift {
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth);
+  will-change: transform;
 }
 
 .hover-lift:hover {
@@ -180,7 +338,7 @@
 
 /* Hover glow effect */
 .hover-glow {
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--anim-fast) var(--ease-smooth);
 }
 
 .hover-glow:hover {
@@ -189,7 +347,13 @@
 
 /* Smooth color transition */
 .transition-colors {
-  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+  transition: color var(--anim-fast) var(--ease-smooth), background-color var(--anim-fast) var(--ease-smooth), border-color var(--anim-fast) var(--ease-smooth);
+}
+
+/* GPU-accelerated transform only */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* ── Reduced Motion ── */
@@ -198,5 +362,16 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .skeleton,
+  .progress-bar__fill,
+  .spinner {
+    animation: none !important;
+  }
+
+  .typing-dot {
+    animation: none !important;
+    opacity: 0.6;
   }
 }

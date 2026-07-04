@@ -14,7 +14,7 @@
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-base);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   border: none;
   background: none;
   color: inherit;
@@ -41,6 +41,7 @@
 .button--secondary:hover {
   background: var(--color-border);
   border-color: var(--color-border-strong);
+  transform: scale(1.02);
 }
 
 .button--ghost {
@@ -112,7 +113,7 @@
   color: var(--color-text);
   font-family: var(--font-family);
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth);
 }
 
 .input:focus {
@@ -134,7 +135,7 @@
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth);
   overflow: hidden;
 }
 
@@ -174,7 +175,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   flex-shrink: 0;
   margin: 6px;
 }
@@ -220,7 +221,7 @@
   display: flex;
   align-items: flex-end;
   gap: 0;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth);
   overflow: hidden;
 }
 
@@ -267,7 +268,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   flex-shrink: 0;
 }
 
@@ -304,12 +305,12 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-2);
-  transition: all var(--transition-fast);
+  transition: transform var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth), border-color var(--anim-fast) var(--ease-smooth);
 }
 
 .card:hover {
   border-color: rgba(74, 144, 217, 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
@@ -321,14 +322,14 @@
   padding: 14px 16px;
   cursor: pointer;
   text-align: left;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   font-family: var(--font-family);
 }
 
 .suggestion-card:hover {
   border-color: rgba(74, 144, 217, 0.4);
   background: var(--color-surface-alt);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
@@ -362,7 +363,7 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   font-family: var(--font-family);
 }
 
@@ -416,6 +417,23 @@
   scrollbar-color: var(--color-border-strong) transparent;
 }
 
+.history-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
 .history-item {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -425,10 +443,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  position: relative;
 }
 
 .history-item:hover {
@@ -446,6 +465,34 @@
   opacity: 0.5;
 }
 
+/* Delete button fades in on conversation hover */
+.history-item .delete-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity var(--anim-fast) var(--ease-smooth);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.history-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.history-item .delete-btn:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
 /* ── Sidebar Footer Button ── */
 .sidebar-footer-btn {
   display: flex;
@@ -456,7 +503,7 @@
   color: var(--color-text-secondary);
   font-size: 13.5px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
 }
 
 .sidebar-footer-btn:hover {
@@ -539,7 +586,7 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   font-family: var(--font-family);
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
   box-shadow: 0 2px 12px rgba(74, 144, 217, 0.3);
 }
 
@@ -602,7 +649,7 @@
 /* Modal close button */
 .modal__header .button--icon {
   color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
 }
 
 .modal__header .button--icon:hover {
@@ -664,7 +711,7 @@
 
 /* ── Form Group Enhancements ── */
 .form-group {
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
 }
 
 .form-group:focus-within label {
@@ -672,7 +719,7 @@
 }
 
 .form-group .input {
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--anim-fast) var(--ease-smooth), box-shadow var(--anim-fast) var(--ease-smooth);
 }
 
 .form-group .input:focus {
@@ -702,7 +749,7 @@
   justify-content: flex-start;
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-base);
-  transition: all var(--transition-fast);
+  transition: all var(--anim-fast) var(--ease-smooth);
 }
 
 .export-option:hover {

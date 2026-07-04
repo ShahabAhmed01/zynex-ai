@@ -80,7 +80,27 @@ export function renderMarkdown(text) {
 
   // Code blocks
   html = html.replace(/\`\`\`(\w*)\n?([\s\S]*?)\`\`\`/g, (_, lang, code) => {
-    return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+    const language = lang || 'text';
+    const codeContent = code.trim();
+    const lines = codeContent.split('\n');
+    const lineNums = lines.map((_, i) => `<span class="code-block__line-num">${i + 1}</span>`).join('');
+
+    return `<div class="code-block">
+      <div class="code-block__header">
+        <span class="code-block__lang">${language}</span>
+        <button class="code-block__copy" data-code="${escHtml(codeContent)}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-block__body">
+        <div class="code-block__lines">${lineNums}</div>
+        <code class="code-block__code language-${language}">${codeContent}</code>
+      </div>
+    </div>`;
   });
 
   // Inline code

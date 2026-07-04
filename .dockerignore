@@ -1,12 +1,39 @@
+# Version control
+.git/
+.gitignore
+
+# Python
 venv/
 .venv/
 __pycache__/
 *.py[cod]
-.env
-.git/
-.gitignore
-*.md
+*.pyo
 .pytest_cache/
 .mypy_cache/
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Generated files
 *.pdf
 *.html
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+LICENSE
+
+# Test files
+scripts/
+tests/

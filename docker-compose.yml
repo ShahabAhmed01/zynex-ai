@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  zynex:
+    build:
+      context: .
+      target: runtime
+    container_name: zynex-ai
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-google/gemini-2.0-flash-001}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - zynex-network
+
+networks:
+  zynex-network:
+    driver: bridge

@@ -1,175 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zynex — Intelligent Assistant</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/chat.css" />
-  <link rel="stylesheet" href="css/animations.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Zynex AI - Intelligent AI Assistant">
+  <meta name="theme-color" content="#4A90D9">
+  <title>Zynex AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/animations.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-
-<!-- Progress bar -->
-<div class="progress-bar" id="progress-bar"></div>
-
-<!-- Toast container -->
-<div class="toast-container" id="toast-container"></div>
-
-<div class="app" id="app">
-
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar__header">
-      <div class="sidebar__logo">Z</div>
-      <span class="sidebar__logo-text">Zynex</span>
-    </div>
-
-    <button class="new-chat-btn" onclick="newChat()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      New conversation
-    </button>
-
-    <div class="history-section">Today</div>
-    <div class="history-list" id="history-list">
-      <!-- populated by JS -->
-    </div>
-
-    <div class="sidebar__footer">
-      <div class="sidebar-footer-btn" onclick="showToast('Settings coming soon', 'info')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Settings
-      </div>
-      <div class="sidebar-footer-btn" onclick="activateAI()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-        </svg>
-        API Configuration
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main -->
-  <main class="main" id="main">
-
-    <!-- Setup Banner (shown when no API key is configured) -->
-    <div class="setup-banner" id="setup-banner">
-      <div class="setup-banner__title">Activate Free AI <span class="setup-banner__badge">FREE</span></div>
-      <div class="setup-banner__desc">
-        One click connects you to powerful AI models (Gemini, Llama, DeepSeek) — completely free, forever.
-      </div>
-      <button class="setup-banner__btn" id="activate-btn" onclick="activateAI()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-        Activate Free AI
-      </button>
-      <div class="setup-banner__success" id="setup-success">AI activated — you're all set!</div>
-    </div>
-
-    <!-- Header -->
-    <header class="header" id="header">
-      <button class="btn btn--icon" id="toggle-sidebar" onclick="toggleSidebar()" title="Toggle sidebar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-
-      <div class="header__title" id="header-title">New conversation</div>
-
-      <div class="model-selector" id="model-btn" onclick="cycleModel()">
-        <div class="model-selector__dot animate-pulse"></div>
-        <span id="model-label">Gemini 2.0 (Free)</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </div>
-
-      <button class="btn btn--icon" onclick="clearChat()" title="Clear chat">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
-      </button>
-    </header>
-
-    <!-- Chat -->
-    <div class="chat" id="chat">
-      <!-- Welcome -->
-      <div class="welcome" id="welcome">
-        <div class="welcome__icon animate-float">✦</div>
-        <h1 class="welcome__title">How can I help you today?</h1>
-        <p class="welcome__subtitle">Ask anything — I'll analyze, generate, explain, and create. Powered by the latest AI models.</p>
-        <div class="suggestions">
-          <div class="suggestion-card" onclick="useSuggestion('Explain how neural networks learn through backpropagation')">
-            <div class="suggestion-card__icon">🧠</div>
-            <div class="suggestion-card__title">Explain AI concepts</div>
-            <div class="suggestion-card__desc">How neural networks learn through backpropagation</div>
-          </div>
-          <div class="suggestion-card" onclick="useSuggestion('Write a Python FastAPI endpoint with JWT authentication')">
-            <div class="suggestion-card__icon">⚡</div>
-            <div class="suggestion-card__title">Generate code</div>
-            <div class="suggestion-card__desc">FastAPI endpoint with JWT authentication</div>
-          </div>
-          <div class="suggestion-card" onclick="useSuggestion('Summarize the key differences between REST and GraphQL APIs')">
-            <div class="suggestion-card__icon">📖</div>
-            <div class="suggestion-card__title">Compare & summarize</div>
-            <div class="suggestion-card__desc">Key differences between REST and GraphQL</div>
-          </div>
-          <div class="suggestion-card" onclick="useSuggestion('Help me debug: my Python async function is blocking the event loop')">
-            <div class="suggestion-card__icon">🔍</div>
-            <div class="suggestion-card__title">Debug & analyze</div>
-            <div class="suggestion-card__desc">Fix async function blocking the event loop</div>
-          </div>
+  <div class="app" id="app">
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="complementary" aria-label="Conversation history">
+      <header class="sidebar__header">
+        <div class="sidebar__logo">
+          <img src="favicon.svg" alt="Zynex AI" width="32" height="32">
+          <span class="sidebar__title">Zynex AI</span>
         </div>
+        <button class="button button--primary sidebar__new-chat" id="newChatBtn" aria-label="Start new conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New Chat
+        </button>
+      </header>
+      
+      <div class="sidebar__content" id="conversationList" role="list" aria-label="Conversations">
+        <!-- Conversations will be loaded here -->
       </div>
-
-      <!-- Messages -->
-      <div class="messages" id="messages" style="display:none;"></div>
-    </div>
-
-    <!-- Input -->
-    <div class="input-area" id="input-area">
-      <div class="input-area__wrapper">
-        <div class="input-box">
-          <textarea
-            id="input"
-            placeholder="Message Zynex…"
-            rows="1"
-            autocomplete="off"
-            spellcheck="true"
-          ></textarea>
-          <div class="input-actions">
-            <button class="send-btn" id="send-btn" title="Send (Enter)" disabled>
-              <svg class="send-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-              <svg class="stop-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-              </svg>
+      
+      <footer class="sidebar__footer">
+        <button class="button button--ghost sidebar__settings" id="settingsBtn" aria-label="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Settings
+        </button>
+      </footer>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main" id="main" role="main">
+      <header class="main__header">
+        <button class="button button--icon main__menu" id="menuBtn" aria-label="Toggle sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        
+        <h1 class="main__title" id="conversationTitle">New Conversation</h1>
+        
+        <div class="main__actions">
+          <div class="model-selector" id="modelSelector" role="button" tabindex="0" aria-label="Select model">
+            <span class="model-selector__name" id="modelName">Gemini 2.0 Flash</span>
+            <span class="model-selector__status"></span>
+          </div>
+          
+          <button class="button button--icon main__clear" id="clearChatBtn" aria-label="Clear chat">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+      
+      <div class="main__content" id="chatArea">
+        <!-- Welcome Screen -->
+        <div class="welcome" id="welcomeScreen">
+          <div class="welcome__icon animate-float">🤖</div>
+          <h2 class="welcome__title">Hello! I'm Zynex AI</h2>
+          <p class="welcome__subtitle">How can I help you today?</p>
+          
+          <div class="welcome__suggestions">
+            <button class="card welcome__suggestion" data-prompt="Explain AI concepts to me">
+              <span class="welcome__suggestion-icon">💡</span>
+              <span class="welcome__suggestion-text">Explain AI concepts</span>
+            </button>
+            <button class="card welcome__suggestion" data-prompt="Generate code for a specific task">
+              <span class="welcome__suggestion-icon">💻</span>
+              <span class="welcome__suggestion-text">Generate code</span>
+            </button>
+            <button class="card welcome__suggestion" data-prompt="Compare and summarize information">
+              <span class="welcome__suggestion-icon">📊</span>
+              <span class="welcome__suggestion-text">Compare & summarize</span>
+            </button>
+            <button class="card welcome__suggestion" data-prompt="Help me debug and analyze code">
+              <span class="welcome__suggestion-icon">🔍</span>
+              <span class="welcome__suggestion-text">Debug & analyze</span>
             </button>
           </div>
         </div>
-        <div class="input-area__hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line</div>
+        
+        <!-- Messages Container -->
+        <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat messages">
+          <!-- Messages will be loaded here -->
+        </div>
       </div>
+      
+      <div class="main__input">
+        <div class="input-area">
+          <textarea 
+            class="input-area__textarea" 
+            id="messageInput" 
+            placeholder="Type your message..." 
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+          <button class="input-area__send" id="sendBtn" aria-label="Send message">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+        <div class="input-area__hint">
+          <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for new line
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar" style="display: none;"></div>
+  
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notifications"></div>
+  
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal" role="dialog" aria-labelledby="settingsTitle" aria-modal="true">
+    <div class="modal__backdrop" id="settingsBackdrop"></div>
+    <div class="modal__content">
+      <header class="modal__header">
+        <h2 id="settingsTitle">Settings</h2>
+        <button class="button button--icon" id="closeSettingsBtn" aria-label="Close settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+      <div class="modal__body">
+        <div class="form-group">
+          <label for="apiKeyInput">API Key</label>
+          <input type="password" class="input" id="apiKeyInput" placeholder="Enter your API key">
+        </div>
+        <div class="form-group">
+          <label for="apiEndpointInput">API Endpoint</label>
+          <input type="url" class="input" id="apiEndpointInput" placeholder="https://openrouter.ai/api/v1">
+        </div>
+      </div>
+      <footer class="modal__footer">
+        <button class="button button--secondary" id="cancelSettingsBtn">Cancel</button>
+        <button class="button button--primary" id="saveSettingsBtn">Save</button>
+      </footer>
     </div>
-
-    <footer class="footer">
-      Made by Shahab Ahmed
-    </footer>
-
-  </main>
-</div>
-
-<script src="js/app.js"></script>
+  </div>
+  
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

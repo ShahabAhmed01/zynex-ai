@@ -115,22 +115,115 @@ function saveConversation() {
 export function renderHistory() {
   $histList.innerHTML = '';
   if (state.conversations.length === 0) {
-    $histList.innerHTML = '<div style="padding:10px 10px;font-size:13px;color:var(--color-text-muted)">No conversations yet</div>';
+    $histList.innerHTML = '<div class="sidebar__empty">No conversations yet</div>';
     return;
   }
-  state.conversations.forEach(conv => {
-    const el = document.createElement('div');
-    el.className = 'history-item' + (conv.id === state.currentId ? ' history-item--active' : '');
-    el.innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      ${conv.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-    `;
-    el.title = conv.title;
-    el.addEventListener('click', () => loadConversation(conv.id));
-    $histList.appendChild(el);
+
+  const groups = groupConversations(state.conversations);
+
+  groups.forEach(({ label, items }) => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'sidebar__date-group';
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'sidebar__date-label';
+    labelEl.textContent = label;
+    groupEl.appendChild(labelEl);
+
+    items.forEach(conv => {
+      const el = document.createElement('div');
+      el.className = 'sidebar__conversation' + (conv.id === state.currentId ? ' sidebar__conversation--active' : '');
+      el.innerHTML = `
+        <svg class="sidebar__conversation-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <div class="sidebar__conversation-body">
+          <div class="sidebar__conversation-title">${conv.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          <div class="sidebar__conversation-time">${formatRelativeTime(conv.updatedAt)}</div>
+        </div>
+        <button class="sidebar__conversation-delete" aria-label="Delete conversation" data-id="${conv.id}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      `;
+      el.title = conv.title;
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.sidebar__conversation-delete')) return;
+        loadConversation(conv.id);
+      });
+      const deleteBtn = el.querySelector('.sidebar__conversation-delete');
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteConversation(conv.id);
+      });
+      groupEl.appendChild(el);
+    });
+
+    $histList.appendChild(groupEl);
   });
+}
+
+function groupConversations(conversations) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterday = today - 86400000;
+  const weekAgo = today - 7 * 86400000;
+
+  const groups = {
+    today: [],
+    yesterday: [],
+    previousWeek: [],
+    older: [],
+  };
+
+  conversations.forEach(conv => {
+    const t = conv.updatedAt || 0;
+    if (t >= today) groups.today.push(conv);
+    else if (t >= yesterday) groups.yesterday.push(conv);
+    else if (t >= weekAgo) groups.previousWeek.push(conv);
+    else groups.older.push(conv);
+  });
+
+  const result = [];
+  if (groups.today.length) result.push({ label: 'Today', items: groups.today });
+  if (groups.yesterday.length) result.push({ label: 'Yesterday', items: groups.yesterday });
+  if (groups.previousWeek.length) result.push({ label: 'Previous 7 Days', items: groups.previousWeek });
+  if (groups.older.length) result.push({ label: 'Older', items: groups.older });
+  return result;
+}
+
+function formatRelativeTime(timestamp) {
+  if (!timestamp) return '';
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function deleteConversation(id) {
+  if (!confirm('Delete this conversation?')) return;
+  state.conversations = state.conversations.filter(c => c.id !== id);
+  saveConversations(state.conversations);
+  if (state.currentId === id) {
+    state.currentId = null;
+    state.messages = [];
+    $messages.innerHTML = '';
+    $messages.style.display = 'none';
+    $welcome.style.display = 'flex';
+    $headerTitle.textContent = 'New conversation';
+    $input.value = '';
+    $input.style.height = 'auto';
+    $sendBtn.disabled = true;
+  }
+  renderHistory();
 }
 
 // ── Suggestions ────────────────────────────────────────────────────────────

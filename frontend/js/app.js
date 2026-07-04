@@ -58,6 +58,22 @@ const $sidebar = document.getElementById('sidebar');
     }
   });
 
+  // Mobile: swipe right to open sidebar
+  let touchStartX = 0;
+  let touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (window.innerWidth > 768) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    if (dx > 60 && dy < 80 && touchStartX < 30 && !state.sidebarOpen) {
+      toggleSidebar();
+    }
+  }, { passive: true });
+
   // Sidebar buttons
   document.getElementById('newChatBtn')?.addEventListener('click', newChat);
   document.getElementById('clearChatBtn')?.addEventListener('click', clearChat);

@@ -357,26 +357,6 @@
   border-radius: 50%;
   background: var(--color-primary);
 }
-
-.typing-dot:nth-child(1) {
-  animation: typingBounce 1.2s ease-in-out infinite;
-}
-
-.typing-dot:nth-child(2) {
-  animation: typingBounce 1.2s ease-in-out 0.15s infinite;
-}
-
-.typing-dot:nth-child(3) {
-  animation: typingBounce 1.2s ease-in-out 0.3s infinite;
-}
-
-@keyframes typingBounce {
-  0%, 60%, 100% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-  30% {
-    opacity: 1;
     transform: translateY(-4px);
   }
 }

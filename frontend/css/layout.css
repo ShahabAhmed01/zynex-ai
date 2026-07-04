@@ -233,34 +233,6 @@
   min-height: 0;
 }
 
-/* ── Welcome Screen ── */
-.welcome {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6) var(--space-3) 100px;
-  text-align: center;
-  min-height: 0;
-}
-
-.welcome__title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.5px;
-  color: var(--color-text);
-  margin-bottom: var(--space-1);
-}
-
-.welcome__subtitle {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  max-width: 400px;
-  line-height: var(--line-height);
-  margin-bottom: var(--space-4);
-}
-
 /* ── Suggestion Grid ── */
 .welcome__suggestions {
   display: grid;
@@ -301,15 +273,6 @@
   font-size: 13.5px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
-}
-
-/* ── Messages Container ── */
-.messages {
-  flex: 1;
-  padding: var(--space-2) 0 var(--space-1);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
 }
 
 /* ── Input Area (outer wrapper, below main__content) ── */

@@ -118,3 +118,79 @@ export function renderMessages(messages) {
   messages.forEach(m => appendMessage({ role: m.role, content: m.content }));
   scrollToBottom();
 }
+
+// ── Modal Interactions ─────────────────────────────────────────────────────
+const activeModals = new Set();
+
+export function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  modal.classList.add('modal--visible');
+  activeModals.add(modalId);
+
+  // Store previously focused element for restore
+  modal._previousFocus = document.activeElement;
+
+  // Focus first focusable element
+  const firstFocusable = modal.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (firstFocusable) {
+    setTimeout(() => firstFocusable.focus(), 50);
+  }
+
+  // Add keyboard handler
+  modal._keydownHandler = (e) => handleModalKeydown(e, modalId);
+  document.addEventListener('keydown', modal._keydownHandler);
+}
+
+export function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  modal.classList.remove('modal--visible');
+  activeModals.delete(modalId);
+
+  // Remove keyboard handler
+  if (modal._keydownHandler) {
+    document.removeEventListener('keydown', modal._keydownHandler);
+    modal._keydownHandler = null;
+  }
+
+  // Restore focus
+  if (modal._previousFocus && modal._previousFocus.focus) {
+    modal._previousFocus.focus();
+  }
+}
+
+function handleModalKeydown(e, modalId) {
+  if (e.key === 'Escape') {
+    closeModal(modalId);
+    return;
+  }
+
+  // Focus trap
+  if (e.key === 'Tab') {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const focusableElements = modal.querySelectorAll(
+      'input, button, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey && document.activeElement === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } else if (!e.shiftKey && document.activeElement === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  }
+}
+
+export function isModalOpen(modalId) {
+  return activeModals.has(modalId);
+}

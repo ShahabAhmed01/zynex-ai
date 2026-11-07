@@ -17,7 +17,7 @@ reportlab>=4.0,<5.0
 
 # Chart generation
 matplotlib>=3.8.0,<4.0
-numpy>=1.26.0
+numpy>=2.2.6
 pillow>=10.0,<13.0
 
 # Templating (PDF & slide reports)

@@ -16,7 +16,7 @@ weasyprint>=60.0,<71.0
 reportlab>=4.0,<5.0
 
 # Chart generation
-matplotlib>=3.8.0,<4.0
+matplotlib>=3.10.9,<4.0
 numpy>=1.26.0
 pillow>=10.0,<13.0
 

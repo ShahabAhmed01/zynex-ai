@@ -4,6 +4,7 @@ Adds a unique request ID to each request for tracing and debugging.
 """
 
 import uuid
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -11,7 +12,7 @@ from starlette.types import ASGIApp
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """
     Middleware that adds a unique request ID to each request.
-    
+
     The request ID is added to the request state and can be accessed via:
     - request.state.request_id
     - X-Request-ID response header
@@ -23,14 +24,14 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         # Always generate server-side request ID
         request_id = str(uuid.uuid4())
-        
+
         # Add to request state for access in endpoints
         request.state.request_id = request_id
-        
+
         # Process the request
         response = await call_next(request)
-        
+
         # Add request ID to response headers
         response.headers["X-Request-ID"] = request_id
-        
+
         return response

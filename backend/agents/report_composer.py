@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from backend.config import get_settings
 from backend.models.schemas import (
     ChartData,
     Citation,
@@ -60,9 +61,27 @@ def _build_source_context(sources: list[dict[str, Any]]) -> str:
     return "\n\n".join(parts)
 
 
+def _chart_signature(chart: ChartData) -> tuple:
+    """Return a stable identity for a chart so duplicates can be removed."""
+    return (
+        chart.chart_type,
+        chart.title.strip().lower(),
+        tuple(chart.labels),
+        tuple(round(value, 4) for value in chart.values),
+    )
+
+
 def _extract_charts(sources: list[dict[str, Any]], topic: str) -> list[ChartData]:
-    """Extract chart data from analyzed sources, generate defaults if none found."""
+    """Extract unique chart data from analyzed sources, then add context charts."""
     charts: list[ChartData] = []
+    seen: set[tuple] = set()
+
+    def add_chart(chart: ChartData) -> None:
+        signature = _chart_signature(chart)
+        if signature in seen:
+            return
+        seen.add(signature)
+        charts.append(chart)
 
     for source in sources:
         cd = source.get("chart_data")
@@ -76,7 +95,7 @@ def _extract_charts(sources: list[dict[str, Any]], topic: str) -> list[ChartData
                     colors=cd.get("colors"),
                 )
                 if chart.labels and chart.values:
-                    charts.append(chart)
+                    add_chart(chart)
             except (ValueError, TypeError) as exc:
                 logger.warning("Skipping invalid chart data: %s", exc)
 
@@ -96,7 +115,7 @@ def _extract_charts(sources: list[dict[str, Any]], topic: str) -> list[ChartData
             relevance_scores.append(round(score, 1))
 
         if labels:
-            charts.append(
+            add_chart(
                 ChartData(
                     chart_type="bar",
                     title=f"Source Relevance Analysis: {topic}",
@@ -116,7 +135,7 @@ def _extract_charts(sources: list[dict[str, Any]], topic: str) -> list[ChartData
         min(100, len(sources) * 8 + 20),
         min(100, len(sources) * 7 + 15),
     ]
-    charts.append(
+    add_chart(
         ChartData(
             chart_type="pie",
             title=f"Research Coverage: {topic}",
@@ -126,7 +145,8 @@ def _extract_charts(sources: list[dict[str, Any]], topic: str) -> list[ChartData
         )
     )
 
-    return charts
+    # Keep reports focused; each chart is rendered as a full-size image.
+    return charts[:4]
 
 
 async def compose_report(
@@ -176,8 +196,8 @@ async def compose_report(
     except Exception as e:
         logger.error("Error generating report sections: %s", e)
         raise
-    summary = results[0]
-    section_contents = results[1:]
+    summary = llm_client.strip_demo_marker(results[0])
+    section_contents = [llm_client.strip_demo_marker(text) for text in results[1:]]
 
     sections: list[ReportSection] = []
     for idx, sec_def in enumerate(outline):
@@ -206,6 +226,7 @@ async def compose_report(
     for section in sections:
         total_words += len(section.content.split())
 
+    settings = get_settings()
     report = ResearchReport(
         topic=topic,
         summary=summary,
@@ -214,6 +235,8 @@ async def compose_report(
         charts=charts,
         generated_at=datetime.now(timezone.utc).isoformat(),
         word_count=total_words,
+        demo_mode=settings.demo_mode,
+        model="demo-template" if settings.demo_mode else settings.DEFAULT_MODEL,
     )
 
     logger.info(

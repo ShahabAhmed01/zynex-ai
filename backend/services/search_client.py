@@ -9,7 +9,10 @@ import asyncio
 import logging
 from typing import Any
 
-from duckduckgo_search import DDGS
+try:  # `ddgs` is the maintained successor to duckduckgo_search
+    from ddgs import DDGS
+except ImportError:  # pragma: no cover - backwards compatibility
+    from duckduckgo_search import DDGS
 
 logger = logging.getLogger("zynex.search")
 

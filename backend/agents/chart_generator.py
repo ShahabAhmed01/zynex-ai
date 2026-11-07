@@ -1,6 +1,6 @@
 """
 Zynex Chart Generator Agent
-Renders chart data into dark-themed matplotlib PNGs and returns base64-encoded images.
+Renders chart data into light-themed matplotlib PNGs and returns base64-encoded images.
 """
 
 from __future__ import annotations
@@ -8,13 +8,11 @@ from __future__ import annotations
 import base64
 import io
 import logging
-from typing import Any
 
 import matplotlib
 
 matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import numpy as np
 
 from backend.models.schemas import ChartData
@@ -22,12 +20,12 @@ from backend.models.schemas import ChartData
 logger = logging.getLogger("zynex.agents.chart_generator")
 
 # ── Brand palette ─────────────────────────────────────────────────────────────
-_BG_COLOR = "#0A0A0F"
-_SURFACE_COLOR = "#12121A"
-_TEXT_COLOR = "#E2E8F0"
-_GRID_COLOR = "#1E293B"
+_BG_COLOR = "#FFFFFF"
+_SURFACE_COLOR = "#FFFFFF"
+_TEXT_COLOR = "#1E293B"
+_GRID_COLOR = "#E2E8F0"
 _DEFAULT_COLORS = [
-    "#3B82F6",  # blue
+    "#4A90D9",  # blue
     "#06B6D4",  # cyan
     "#8B5CF6",  # violet
     "#10B981",  # emerald
@@ -38,8 +36,8 @@ _DEFAULT_COLORS = [
 ]
 
 
-def _apply_dark_theme(fig: plt.Figure, ax: plt.Axes) -> None:
-    """Apply the Zynex dark theme to a matplotlib figure."""
+def _apply_light_theme(fig: plt.Figure, ax: plt.Axes) -> None:
+    """Apply the Zynex light theme to a matplotlib figure."""
     fig.patch.set_facecolor(_BG_COLOR)
     ax.set_facecolor(_SURFACE_COLOR)
     ax.tick_params(colors=_TEXT_COLOR, labelsize=9)
@@ -62,7 +60,7 @@ def _get_colors(chart: ChartData) -> list[str]:
 def _render_bar(chart: ChartData) -> str:
     """Render a bar chart and return base64 PNG."""
     fig, ax = plt.subplots(figsize=(10, 5))
-    _apply_dark_theme(fig, ax)
+    _apply_light_theme(fig, ax)
 
     colors = _get_colors(chart)
     x = np.arange(len(chart.labels))
@@ -125,7 +123,7 @@ def _render_pie(chart: ChartData) -> str:
 def _render_line(chart: ChartData) -> str:
     """Render a line chart and return base64 PNG."""
     fig, ax = plt.subplots(figsize=(10, 5))
-    _apply_dark_theme(fig, ax)
+    _apply_light_theme(fig, ax)
 
     color = _get_colors(chart)[0]
     x = np.arange(len(chart.labels))

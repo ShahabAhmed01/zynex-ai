@@ -31,7 +31,7 @@ def _parse_analysis(raw: str) -> dict[str, Any] | None:
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
+        lines = [line for line in lines if not line.strip().startswith("```")]
         cleaned = "\n".join(lines)
     if "---" in cleaned:
         cleaned = cleaned[: cleaned.index("---")]
@@ -46,17 +46,18 @@ def _parse_analysis(raw: str) -> dict[str, Any] | None:
 
 
 def _default_analysis(source: dict[str, Any]) -> dict[str, Any]:
-    """Fallback analysis when LLM parse fails."""
+    """
+    Fallback analysis when the LLM output cannot be parsed.
+
+    Quotes the retrieved source instead of inventing facts, so a provider
+    outage cannot silently turn into fabricated research content.
+    """
     title = source.get("title", "Source")
-    content = source.get("content", "")
-    snippet = content[:200] if content else "No content available."
+    content = " ".join(source.get("content", "").split())
+    snippet = content[:240] if content else "No content was returned for this source."
     return {
-        "summary": f"This source titled '{title}' provides relevant information about the research topic. {snippet}",
-        "key_facts": [
-            f"Source covers aspects related to the topic from '{title}'",
-            "Contains relevant data points and contextual information",
-            "Provides supporting evidence for the research",
-        ],
+        "summary": f"Excerpt from “{title}”: {snippet}",
+        "key_facts": [f"Source title: {title}", f"Excerpt: {snippet}"],
         "chart_data": None,
     }
 

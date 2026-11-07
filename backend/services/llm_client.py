@@ -1,33 +1,42 @@
 """
 Zynex LLM Client
 Communicates with OpenRouter (OpenAI-compatible) or falls back to demo templates.
+
+Real-mode failures are raised as ``LLMError`` so the API never presents
+fabricated template text as if it came from a live model.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
 
-from openai import AsyncOpenAI, APIError, APITimeoutError, RateLimitError
+from openai import APIError, APIStatusError, APITimeoutError, AsyncOpenAI, RateLimitError
 
 from backend.config import get_settings
 
 logger = logging.getLogger("zynex.llm")
 
+_REPO_URL = "https://github.com/ShahabAhmed01/zynex-ai"
+
+
+class LLMError(RuntimeError):
+    """Raised when a real LLM request cannot be completed."""
+
+
 # ── Client singleton ─────────────────────────────────────────────────────────
 
-_client: Optional[AsyncOpenAI] = None
+_client: AsyncOpenAI | None = None
 
 
 def _get_client() -> AsyncOpenAI:
     """Lazy-initialise the OpenAI-compatible async client for OpenRouter."""
     global _client
     if _client is None:
-        s = get_settings()
+        settings = get_settings()
         _client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=s.OPENROUTER_API_KEY or "demo-placeholder",
+            api_key=settings.OPENROUTER_API_KEY or "demo-placeholder",
             timeout=60.0,
         )
     return _client
@@ -40,7 +49,7 @@ _DEMO_MARKER = (
 )
 
 
-def _demo_response(prompt: str, system: str) -> str:
+def _demo_response(prompt: str) -> str:
     """Return a plausible template response so the app works without an API key."""
     prompt_lower = prompt.lower()
 
@@ -119,29 +128,40 @@ def _demo_response(prompt: str, system: str) -> str:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+def strip_demo_marker(text: str) -> str:
+    """Remove the chat-only demo footer from report copy.
+
+    Reports carry an explicit demo disclaimer in the UI and exported files, so
+    repeating the footer inside every summary/section is unnecessary noise.
+    """
+    return text.replace(_DEMO_MARKER, "").strip()
+
+
 async def generate(
     prompt: str,
     system: str = "",
     model: str | None = None,
     temperature: float = 0.7,
-    max_tokens: int = 4096,
+    max_tokens: int | None = None,
 ) -> str:
     """
     Generate a completion from the LLM.
 
-    Falls back to demo mode when no API key is configured.
-    Includes retry logic (3 attempts with exponential backoff).
+    Demo mode returns template text. In real mode, failures are retried and then
+    raised as ``LLMError`` – there is no silent fallback to demo content.
     """
+    settings = get_settings()
+
     # ── Demo mode ─────────────────────────────────────────────────────────
-    s = get_settings()
-    if s.demo_mode:
+    if settings.demo_mode:
         logger.info("Demo mode – returning template response")
         await asyncio.sleep(0.3)  # Simulate latency
-        return _demo_response(prompt, system)
+        return _demo_response(prompt)
 
     # ── Real mode ─────────────────────────────────────────────────────────
     client = _get_client()
-    chosen_model = model or s.DEFAULT_MODEL
+    chosen_model = model or settings.DEFAULT_MODEL
+    token_limit = max_tokens or settings.MAX_TOKENS
 
     messages: list[dict] = []
     if system:
@@ -156,14 +176,37 @@ async def generate(
                 model=chosen_model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_tokens=token_limit,
                 extra_headers={
-                    "HTTP-Referer": "https://zynex.ai",
+                    "HTTP-Referer": _REPO_URL,
                     "X-Title": "Zynex Research Agent",
                 },
             )
             content = response.choices[0].message.content
-            return content.strip() if content else ""
+            cleaned = content.strip() if content else ""
+            if not cleaned:
+                raise LLMError("The model returned an empty response.")
+            return cleaned
+
+        except LLMError:
+            raise
+
+        except APIStatusError as exc:
+            last_error = exc
+            logger.error(
+                "OpenRouter rejected the request (HTTP %s) on attempt %d/3: %s",
+                exc.status_code,
+                attempt,
+                exc,
+            )
+            # Invalid key/model/request – retrying cannot help.
+            if exc.status_code in (400, 401, 403, 404):
+                raise LLMError(
+                    f"OpenRouter rejected the request (HTTP {exc.status_code}). "
+                    "Check the API key and DEFAULT_MODEL value."
+                ) from exc
+            if attempt < 3:
+                await asyncio.sleep(2 ** attempt)
 
         except RateLimitError as exc:
             last_error = exc
@@ -189,16 +232,18 @@ async def generate(
             if attempt < 3:
                 await asyncio.sleep(1)
 
-    # All retries exhausted – fall back to demo
-    logger.error("All retries exhausted, falling back to demo: %s", last_error)
-    return _demo_response(prompt, system)
+    logger.error("All LLM retries exhausted: %s", last_error)
+    raise LLMError(
+        "Could not get a response from OpenRouter after 3 attempts. "
+        "Check network connectivity and the server logs."
+    ) from last_error
 
 
 async def generate_analytical(
     prompt: str,
     system: str = "",
     model: str | None = None,
-    max_tokens: int = 4096,
+    max_tokens: int | None = None,
 ) -> str:
     """Generate with lower temperature (0.3) for structured / analytical tasks."""
     return await generate(
@@ -214,7 +259,7 @@ async def generate_creative(
     prompt: str,
     system: str = "",
     model: str | None = None,
-    max_tokens: int = 4096,
+    max_tokens: int | None = None,
 ) -> str:
     """Generate with higher temperature (0.7) for creative / narrative tasks."""
     return await generate(
@@ -231,31 +276,26 @@ async def verify_connection() -> dict:
     Ping OpenRouter with a minimal prompt to confirm the API key and model work.
     Does not use demo-mode fallbacks.
     """
-    s = get_settings()
-    if s.demo_mode:
+    settings = get_settings()
+    if settings.demo_mode:
         return {
             "ok": False,
             "demo_mode": True,
-            "model": s.DEFAULT_MODEL,
+            "model": settings.DEFAULT_MODEL,
             "message": "OPENROUTER_API_KEY not set — running in demo mode",
         }
 
     client = _get_client()
-    chosen_model = s.DEFAULT_MODEL
+    chosen_model = settings.DEFAULT_MODEL
 
     try:
         response = await client.chat.completions.create(
             model=chosen_model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": 'Reply with exactly one word: OK',
-                }
-            ],
+            messages=[{"role": "user", "content": "Reply with exactly one word: OK"}],
             temperature=0,
             max_tokens=16,
             extra_headers={
-                "HTTP-Referer": "https://github.com/ShahabAhmed01/zynex-ai",
+                "HTTP-Referer": _REPO_URL,
                 "X-Title": "Zynex Research Agent",
             },
         )

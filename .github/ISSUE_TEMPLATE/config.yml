@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/ShahabAhmed01/zynex-ai/security/advisories/new
+    about: Please report vulnerabilities privately through GitHub Security Advisories.
+  - name: Read the deployment guide
+    url: https://github.com/ShahabAhmed01/zynex-ai/blob/main/docs/DEPLOYMENT.md
+    about: Setup, Docker, and platform deployment instructions.

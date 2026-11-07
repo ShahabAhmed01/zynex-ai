@@ -1,0 +1,93 @@
+name: Bug report
+description: Report a reproducible problem with Zynex
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search existing
+        issues first and remove any API keys or private data from logs.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the problem and what you expected instead.
+      placeholder: When I start a research job, ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest reliable sequence of steps.
+      placeholder: |
+        1. Run `python run.py`
+        2. Open http://localhost:8000
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: AI mode
+      options:
+        - Demo mode (no API key)
+        - Live mode (OpenRouter key configured)
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Chat / streaming
+        - Research pipeline
+        - Report rendering or exports
+        - Activation / settings
+        - Installation or Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Zynex version or commit
+      description: Shown in Settings or via `/api/health`.
+      placeholder: "2.0.0 or e5b1860"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, browser, and how you run Zynex.
+      placeholder: Windows 11, Python 3.12, Edge, `python run.py`
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Server traceback or browser console output. Redact secrets.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed API keys and private data from this report.
+          required: true

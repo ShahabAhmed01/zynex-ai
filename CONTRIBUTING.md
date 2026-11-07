@@ -81,10 +81,9 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # 4. Install all dependencies (including dev tools)
-pip install -r requirements.txt
-pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 
-# 5. Set up environment
+# 5. Optional: configure an API key (demo mode works without one)
 cp .env.example .env
 
 # 6. Run the development server
@@ -94,15 +93,20 @@ python run.py
 ### Running Tests
 
 ```bash
-# Run all tests
-pytest
+# Unit and API tests (demo mode, no server required)
+pytest -q
 
-# Run with coverage
-pytest --cov=backend
+# Run a specific file
+pytest tests/test_api.py
 
-# Run specific test file
-pytest tests/test_pipeline.py
+# Six-stage pipeline with live web search
+python scripts/test_pipeline.py
+
+# HTTP end-to-end test against a running server
+python scripts/test_api_e2e.py http://127.0.0.1:8000
 ```
+
+The pytest suite forces demo mode and resets the in-memory research stores between tests. Tests must not call a paid model provider.
 
 ---
 
@@ -112,23 +116,21 @@ We use the following tools to maintain consistent code quality:
 
 | Tool | Purpose | Config |
 |------|---------|--------|
-| **[Black](https://black.readthedocs.io)** | Code formatter | `line-length = 100` |
-| **[isort](https://pycqa.github.io/isort/)** | Import sorting | `profile = "black"` |
-| **[Ruff](https://docs.astral.sh/ruff/)** | Linter | See `pyproject.toml` |
-| **[mypy](https://mypy.readthedocs.io)** | Type checking | See `pyproject.toml` |
+| **[Ruff](https://docs.astral.sh/ruff/)** | Linter and import sorting | `pyproject.toml` |
+| **[pytest](https://pytest.org)** | Unit and API tests | `pyproject.toml` |
+| **[pip-audit](https://pypi.org/project/pip-audit/)** | Dependency vulnerability check | — |
 
 ### Before Committing
 
 ```bash
-# Format code
-black .
-isort .
-
 # Lint
-ruff check .
+ruff check backend tests scripts
 
-# Type check
-mypy backend/
+# Tests
+pytest -q
+
+# Pipeline integration check
+python scripts/test_pipeline.py
 ```
 
 ### General Guidelines
@@ -171,8 +173,8 @@ mypy backend/
 
 ## 🌟 Community
 
-- **Questions?** Open a [Discussion](https://github.com/ShahabAhmed01/zynex-ai/discussions)
-- **Found a security issue?** See [SECURITY.md](SECURITY.md) for responsible disclosure
+- **Questions or ideas?** Open an [issue](https://github.com/ShahabAhmed01/zynex-ai/issues) with the relevant template.
+- **Found a security issue?** See [SECURITY.md](SECURITY.md) for private reporting.
 
 ---
 

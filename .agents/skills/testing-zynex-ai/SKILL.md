@@ -29,29 +29,26 @@ python run.py
 ## Key Test Areas
  
 ### 1. Demo Mode (No API Key)
-- Navigate to http://localhost:8000 
-- Verify the "Activate Free AI" banner appears at the top with a "FREE" badge
-- Verify /api/config returns `{"demo_mode":true,"has_api_key":false,"default_model":"google/gemini-2.0-flash-001"}`
+- Navigate to http://localhost:8000
+- Verify the "AI text is simulated in demo mode" banner appears at the top
+- Verify /api/config returns `{"demo_mode":true,"has_api_key":false,"default_model":"google/gemma-4-31b-it:free"}`
 - Send a chat message — should receive a structured demo response with sections, bullet points
-- Demo response should end with italic text: "Running in demo mode — activate free AI via the setup banner for real responses."
- 
-### 2. OAuth Flow
-- Click "Activate Free AI" button
-- A popup should open to openrouter.ai/auth (or openrouter.ai/sign-up with redirect)
-- The callback URL in the popup URL should be URL-encoded (look for %253A, %252F)
-- The button should change to "Connecting…" (disabled) while the popup is open
-- After closing the popup without authenticating, the button should revert to "Activate Free AI"
-- **Full OAuth test** (requires OpenRouter account): Complete the auth flow, verify key is saved to .env, config hot-reloads, and the banner disappears
- 
+- Demo responses should be clearly labelled in UI and report exports
+
+### 2. Activation Flow
+- Click "Activate free AI" button
+- A popup should open to openrouter.ai/auth
+- After successful authentication and key exchange, the key is saved to .env and config hot-reloads
+- Demo banner and model menu reflect live mode
+
 ### 3. Model Switcher
-- Click the model selector pill in the header (e.g., "Gemini 2.0 (Free)")
-- It should cycle through: Gemini 2.0 → Llama 3.3 → DeepSeek R1 → Gemini 2.0
-- A toast notification should appear for each switch (e.g., "Switched to Llama 3.3 (Free)")
- 
+- Click the model selector pill in the header (e.g., "Gemma 4 31B")
+- It cycles through verified free models: Gemma 4 31B → Nemotron 3.5 Lightning → Nemotron 3 Ultra 550B
+
 ### 4. API Endpoints
-- GET /api/config — returns demo_mode status and default model
-- GET /api/auth/url?callback_url=http://localhost:8000/?oauth=callback — returns OpenRouter auth URL
-- POST /api/auth/callback with {"code": "test"} — exchanges code for key (will fail with invalid code, but verifies endpoint exists)
+- GET /api/config — returns demo_mode status, has_api_key, free_models list, and version
+- GET /api/auth/url?callback_url=… — returns OpenRouter auth URL
+- POST /api/auth/callback with {"code": "…"} — exchanges code for API key
  
 ## Common Issues
 - **Port already in use**: The server might already be running from a previous attempt. Kill the process on port 8000 first.

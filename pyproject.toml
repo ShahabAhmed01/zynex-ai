@@ -40,7 +40,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "fastapi>=0.104.0,<1.0",
+    "fastapi>=0.162.0,<1.0",
     "uvicorn[standard]>=0.24.0,<1.0",
     "openai>=3.0.0,<4.0",
     "ddgs>=9.0.0",

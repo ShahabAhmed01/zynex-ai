@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Zynex AI - Intelligent AI Assistant">
+  <meta name="description" content="Zynex — an open-source AI research agent. Ask a question, get a cited report with charts and PDF/DOCX export.">
   <meta name="theme-color" content="#4A90D9">
-  <title>Zynex AI</title>
-  
+  <title>Zynex — AI Research Agent</title>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
+
   <!-- CSS -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/research.css">
   <link rel="stylesheet" href="css/animations.css">
-  
+
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="manifest" href="manifest.json">
@@ -27,118 +28,177 @@
   <div class="app" id="app">
     <!-- Sidebar Overlay (Mobile) -->
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
-    
+
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar" role="complementary" aria-label="Conversation history">
+    <aside class="sidebar" id="sidebar" role="complementary" aria-label="Workspace navigation">
       <header class="sidebar__header">
         <div class="sidebar__logo">
           <img src="favicon.svg" alt="Zynex AI" width="32" height="32">
-          <span class="sidebar__title">Zynex AI</span>
+          <span class="sidebar__title">Zynex</span>
         </div>
         <button class="button button--primary sidebar__new-chat" id="newChatBtn" aria-label="Start new conversation">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          New Chat
+          <span id="newItemLabel">New Chat</span>
         </button>
       </header>
-      
-      <div class="sidebar__content" id="conversationList" role="list" aria-label="Conversations">
-        <!-- Conversations will be loaded here -->
+
+      <nav class="sidebar__nav" aria-label="Workspace mode">
+        <button class="sidebar__nav-item sidebar__nav-item--active" data-view="chat" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Chat
+        </button>
+        <button class="sidebar__nav-item" data-view="research" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Research
+        </button>
+      </nav>
+
+      <div class="sidebar__content" id="sidebarContent">
+        <div id="conversationList" role="list" aria-label="Conversations">
+          <!-- Conversations will be loaded here -->
+        </div>
+        <div id="researchHistoryList" role="list" aria-label="Recent research reports" hidden>
+          <!-- Reports will be loaded here -->
+        </div>
       </div>
-      
+
       <footer class="sidebar__footer">
         <button class="button button--ghost sidebar__settings" id="exportBtn" aria-label="Export chat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Export
+          Export chat
         </button>
         <button class="button button--ghost sidebar__settings" id="settingsBtn" aria-label="Settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
           Settings
         </button>
+        <a class="button button--ghost sidebar__settings" href="https://github.com/ShahabAhmed01/zynex-ai" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.6.5.5 5.6.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2.3c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.6 18.4.5 12 .5z"></path>
+          </svg>
+          GitHub
+        </a>
       </footer>
     </aside>
-    
+
     <!-- Main Content -->
     <main class="main" id="main" role="main">
       <header class="main__header">
         <button class="button button--icon main__menu" id="menuBtn" aria-label="Toggle sidebar">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
-        
+
         <h1 class="main__title" id="conversationTitle">New Conversation</h1>
-        
-        <div class="main__actions">
-          <div class="model-selector" id="modelSelector" role="button" tabindex="0" aria-label="Select model">
-            <span class="model-selector__name" id="modelName">Gemini 2.0 Flash</span>
-            <span class="model-selector__status"></span>
-          </div>
-          
+
+        <div class="mode-tabs" role="tablist" aria-label="Workspace mode">
+          <button class="mode-tab mode-tab--active" data-view="chat" type="button" role="tab" aria-selected="true">Chat</button>
+          <button class="mode-tab" data-view="research" type="button" role="tab" aria-selected="false">Research</button>
+        </div>
+
+        <div class="main__actions" id="chatActions">
+          <button class="model-selector" id="modelSelector" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Select model">
+            <span class="model-selector__name" id="modelName">Free model</span>
+            <span class="model-selector__status" id="modelStatus" title="AI connection status"></span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="model-menu" id="modelMenu" role="listbox" aria-label="Available models" hidden></div>
+
           <button class="button button--icon main__clear" id="clearChatBtn" aria-label="Clear chat">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
           </button>
         </div>
       </header>
-      
+
+      <!-- Demo / activation banner -->
+      <div class="setup-banner" id="setupBanner" hidden>
+        <div class="setup-banner__text">
+          <span class="setup-banner__badge" id="setupBannerBadge">DEMO</span>
+          <span id="setupBannerText">AI text is simulated in demo mode. Research still searches the live web.</span>
+        </div>
+        <button class="button button--primary setup-banner__button" id="activateAiBtn" type="button">
+          Activate free AI
+        </button>
+      </div>
+
+      <!-- ══════════════ CHAT VIEW ══════════════ -->
       <div class="main__content" id="chatArea">
         <!-- Welcome Screen -->
         <div class="welcome" id="welcomeScreen">
-          <div class="welcome__icon animate-float">🤖</div>
-          <h2 class="welcome__title">Hello! I'm Zynex AI</h2>
-          <p class="welcome__subtitle">How can I help you today?</p>
-          
+          <div class="welcome__icon animate-float">✦</div>
+          <h2 class="welcome__title">Hello, I'm Zynex</h2>
+          <p class="welcome__subtitle">Chat about anything — or switch to Research for a cited report.</p>
+
           <div class="welcome__suggestions">
-            <button class="card welcome__suggestion" data-prompt="Explain AI concepts to me">
+            <button class="card welcome__suggestion" data-prompt="Explain how retrieval-augmented generation works">
               <span class="welcome__suggestion-icon">💡</span>
-              <span class="welcome__suggestion-text">Explain AI concepts</span>
+              <span class="welcome__suggestion-text">Explain a concept</span>
             </button>
-            <button class="card welcome__suggestion" data-prompt="Generate code for a specific task">
+            <button class="card welcome__suggestion" data-prompt="Review this Python function for bugs and edge cases">
               <span class="welcome__suggestion-icon">💻</span>
-              <span class="welcome__suggestion-text">Generate code</span>
+              <span class="welcome__suggestion-text">Review some code</span>
             </button>
-            <button class="card welcome__suggestion" data-prompt="Compare and summarize information">
+            <button class="card welcome__suggestion" data-prompt="Compare vector databases for a small production app">
               <span class="welcome__suggestion-icon">📊</span>
-              <span class="welcome__suggestion-text">Compare & summarize</span>
+              <span class="welcome__suggestion-text">Compare options</span>
             </button>
-            <button class="card welcome__suggestion" data-prompt="Help me debug and analyze code">
+            <button class="card welcome__suggestion" data-prompt="Help me debug a failing FastAPI endpoint">
               <span class="welcome__suggestion-icon">🔍</span>
-              <span class="welcome__suggestion-text">Debug & analyze</span>
+              <span class="welcome__suggestion-text">Debug an issue</span>
             </button>
           </div>
+
+          <button class="welcome__research-cta" id="welcomeResearchBtn" type="button">
+            <span>
+              <strong>Need sources, not just an answer?</strong>
+              <small>Run the autonomous research agent →</small>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
         </div>
-        
+
         <!-- Messages Container -->
         <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat messages">
           <!-- Messages will be loaded here -->
         </div>
       </div>
-      
-      <div class="main__input">
+
+      <div class="main__input" id="chatInputArea">
         <div class="input-area">
-          <textarea 
-            class="input-area__textarea" 
-            id="messageInput" 
-            placeholder="Type your message..." 
+          <textarea
+            class="input-area__textarea"
+            id="messageInput"
+            placeholder="Type your message…"
             rows="1"
             aria-label="Message input"
           ></textarea>
           <button class="input-area__send" id="sendBtn" aria-label="Send message">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
@@ -148,15 +208,144 @@
           <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for new line
         </div>
       </div>
+
+      <!-- ══════════════ RESEARCH VIEW ══════════════ -->
+      <section class="research" id="researchView" aria-label="Research workspace" hidden>
+        <div class="research__inner">
+          <!-- Research input -->
+          <div class="research-pane" id="researchFormView">
+            <header class="research-hero">
+              <span class="research-eyebrow">Autonomous research</span>
+              <h2>Ask a question. Get a cited briefing.</h2>
+              <p>
+                Zynex plans its own searches, reads live web results, analyzes the sources,
+                writes a structured report, and renders charts. Export the result as PDF,
+                DOCX, or a standalone slide deck.
+              </p>
+            </header>
+
+            <form class="research-form" id="researchForm">
+              <label class="research-form__label" for="researchTopic">Research topic</label>
+              <textarea
+                class="research-form__textarea"
+                id="researchTopic"
+                name="topic"
+                rows="3"
+                minlength="3"
+                maxlength="500"
+                placeholder="e.g. How are sodium-ion batteries competing with lithium-ion in grid storage?"
+                required
+              ></textarea>
+
+              <fieldset class="depth-picker">
+                <legend>Depth</legend>
+                <label class="depth-option depth-option--active">
+                  <input type="radio" name="depth" value="quick" checked>
+                  <span class="depth-option__body">
+                    <strong>Quick</strong>
+                    <small>4 queries · 3 sections</small>
+                  </span>
+                </label>
+                <label class="depth-option">
+                  <input type="radio" name="depth" value="standard">
+                  <span class="depth-option__body">
+                    <strong>Standard</strong>
+                    <small>6 queries · 5 sections</small>
+                  </span>
+                </label>
+                <label class="depth-option">
+                  <input type="radio" name="depth" value="deep">
+                  <span class="depth-option__body">
+                    <strong>Deep</strong>
+                    <small>8 queries · 7 sections</small>
+                  </span>
+                </label>
+              </fieldset>
+
+              <div class="research-form__footer">
+                <span class="research-form__hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to start</span>
+                <button class="button button--primary research-form__submit" id="startResearchBtn" type="submit">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  Start research
+                </button>
+              </div>
+            </form>
+
+            <div class="research-note" id="demoResearchNote" hidden>
+              <strong>Demo mode:</strong> AI writing (source summaries and the report) uses
+              built-in templates, but web search and the cited sources are real. Activate
+              free AI for live analysis and writing.
+            </div>
+
+            <div class="research-steps" aria-label="How the pipeline works">
+              <div class="research-step"><span>1</span><div><strong>Plan</strong><small>Queries and outline</small></div></div>
+              <div class="research-step"><span>2</span><div><strong>Search</strong><small>Live DuckDuckGo results</small></div></div>
+              <div class="research-step"><span>3</span><div><strong>Analyze</strong><small>Summaries and facts</small></div></div>
+              <div class="research-step"><span>4</span><div><strong>Compose</strong><small>Cited report</small></div></div>
+              <div class="research-step"><span>5</span><div><strong>Chart</strong><small>Rendered visuals</small></div></div>
+              <div class="research-step"><span>6</span><div><strong>Export</strong><small>PDF, DOCX, slides</small></div></div>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="research-pane" id="researchProgressView" hidden>
+            <div class="research-progress">
+              <span class="research-eyebrow">Research in progress</span>
+              <h2 id="progressTopic">Working…</h2>
+              <div class="research-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="researchProgressTrack">
+                <div class="research-progress__bar" id="researchProgressBar"></div>
+              </div>
+              <p class="research-progress__message" id="progressMessage">Starting the pipeline…</p>
+
+              <ol class="stage-list" id="stageList">
+                <li class="stage-item" data-stage="planning"><span class="stage-item__dot"></span><div><strong>Plan</strong><small>Generating queries and outline</small></div></li>
+                <li class="stage-item" data-stage="researching"><span class="stage-item__dot"></span><div><strong>Search</strong><small>Collecting live web sources</small></div></li>
+                <li class="stage-item" data-stage="analyzing"><span class="stage-item__dot"></span><div><strong>Analyze</strong><small>Summarizing each source</small></div></li>
+                <li class="stage-item" data-stage="composing"><span class="stage-item__dot"></span><div><strong>Compose</strong><small>Writing the cited report</small></div></li>
+                <li class="stage-item" data-stage="charting"><span class="stage-item__dot"></span><div><strong>Chart</strong><small>Rendering visuals</small></div></li>
+                <li class="stage-item" data-stage="completed"><span class="stage-item__dot"></span><div><strong>Done</strong><small>Report ready</small></div></li>
+              </ol>
+
+              <div class="research-progress__error" id="researchError" hidden></div>
+              <div class="research-progress__actions">
+                <button class="button button--secondary" id="cancelResearchViewBtn" type="button">Back</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Report -->
+          <article class="research-pane research-report" id="researchReportView" hidden>
+            <header class="report-hero">
+              <div class="report-hero__meta">
+                <span class="report-badge" id="reportModeBadge">Report</span>
+                <span id="reportDate"></span>
+                <span id="reportStats"></span>
+              </div>
+              <h2 id="reportTopic"></h2>
+              <div class="report-actions">
+                <button class="button button--secondary" type="button" data-export="pdf">PDF</button>
+                <button class="button button--secondary" type="button" data-export="docx">DOCX</button>
+                <button class="button button--secondary" type="button" data-export="slides">Slides</button>
+                <button class="button button--secondary" type="button" id="copyReportBtn">Copy Markdown</button>
+                <button class="button button--primary" type="button" id="newResearchBtn">New research</button>
+              </div>
+            </header>
+            <div class="report-body" id="reportBody"></div>
+          </article>
+        </div>
+      </section>
     </main>
   </div>
-  
+
   <!-- Progress Bar -->
   <div class="progress-bar" id="progressBar" style="display: none;"></div>
-  
+
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notifications"></div>
-  
+
   <!-- Settings Modal -->
   <div class="modal" id="settingsModal" role="dialog" aria-labelledby="settingsTitle" aria-modal="true">
     <div class="modal__backdrop" id="settingsBackdrop"></div>
@@ -164,25 +353,43 @@
       <header class="modal__header">
         <h2 id="settingsTitle">Settings</h2>
         <button class="button button--icon" id="closeSettingsBtn" aria-label="Close settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </header>
       <div class="modal__body">
-        <div class="form-group">
-          <label for="apiKeyInput">API Key</label>
-          <input type="password" class="input" id="apiKeyInput" placeholder="Enter your API key">
+        <div class="settings-status">
+          <span class="settings-status__dot" id="settingsStatusDot"></span>
+          <div>
+            <strong id="settingsStatusTitle">Checking connection…</strong>
+            <p id="settingsStatusText">Loading runtime configuration.</p>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="apiEndpointInput">API Endpoint</label>
-          <input type="url" class="input" id="apiEndpointInput" placeholder="https://openrouter.ai/api/v1">
+
+        <dl class="settings-grid">
+          <dt>Model</dt>
+          <dd id="settingsModel">—</dd>
+          <dt>Version</dt>
+          <dd id="settingsVersion">—</dd>
+          <dt>Mode</dt>
+          <dd id="settingsMode">—</dd>
+        </dl>
+
+        <div class="settings-activate" id="settingsActivateWrap" hidden>
+          <button class="button button--primary" id="settingsActivateBtn" type="button">Activate free AI</button>
+          <p>Opens OpenRouter in a popup. No key is stored in the browser.</p>
         </div>
+
+        <p class="settings-note">
+          For advanced configuration, set <code>OPENROUTER_API_KEY</code> and
+          <code>DEFAULT_MODEL</code> in a local <code>.env</code> file and restart the server.
+          See <a href="https://github.com/ShahabAhmed01/zynex-ai#configuration" target="_blank" rel="noopener noreferrer">the README</a>.
+        </p>
       </div>
       <footer class="modal__footer">
-        <button class="button button--secondary" id="cancelSettingsBtn">Cancel</button>
-        <button class="button button--primary" id="saveSettingsBtn">Save</button>
+        <button class="button button--secondary" id="closeSettingsFooterBtn">Close</button>
       </footer>
     </div>
   </div>
@@ -194,7 +401,7 @@
       <header class="modal__header">
         <h2 id="exportTitle">Export Conversation</h2>
         <button class="button button--icon" id="closeExportBtn" aria-label="Close export">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -204,25 +411,29 @@
         <div class="form-group">
           <label>Export Format</label>
           <div class="export-options">
-            <button class="button button--secondary export-option" data-format="markdown">
+            <button class="button button--secondary export-option" data-format="markdown" type="button">
               <span>Markdown</span>
             </button>
-            <button class="button button--secondary export-option" data-format="json">
+            <button class="button button--secondary export-option" data-format="json" type="button">
               <span>JSON</span>
             </button>
-            <button class="button button--secondary export-option" data-format="text">
+            <button class="button button--secondary export-option" data-format="text" type="button">
               <span>Plain Text</span>
             </button>
           </div>
         </div>
       </div>
       <footer class="modal__footer">
-        <button class="button button--secondary" id="cancelExportBtn">Cancel</button>
-        <button class="button button--primary" id="confirmExportBtn">Export</button>
+        <button class="button button--secondary" id="cancelExportBtn" type="button">Cancel</button>
+        <button class="button button--primary" id="confirmExportBtn" type="button">Export</button>
       </footer>
     </div>
   </div>
-  
+
+  <noscript>
+    <div class="noscript">Zynex needs JavaScript enabled to run. The API is still available at <code>/api/health</code>.</div>
+  </noscript>
+
   <!-- Scripts -->
   <script type="module" src="js/app.js"></script>
 </body>

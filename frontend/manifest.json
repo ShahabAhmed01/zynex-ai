@@ -1,12 +1,15 @@
 {
-  "name": "Zynex AI",
+  "name": "Zynex AI Research Agent",
   "short_name": "Zynex",
-  "description": "Intelligent AI assistant with streaming chat and autonomous research capabilities.",
+  "description": "Open-source AI research agent: live web search, cited reports, charts, and PDF/DOCX export.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F8FAFE",
   "theme_color": "#4A90D9",
   "orientation": "any",
+  "lang": "en",
+  "categories": ["productivity", "education", "utilities"],
   "icons": [
     {
       "src": "/favicon.svg",

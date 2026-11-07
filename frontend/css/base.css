@@ -83,6 +83,11 @@ html {
   --input-height: 64px;
 }
 
+/* ── Visibility ── */
+[hidden] {
+  display: none !important;
+}
+
 /* ── Typography ── */
 body {
   font-family: var(--font-family);

@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a focused improvement to Zynex
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the problem first, then the change you have in mind.
+        Small, narrowly scoped proposals are easiest to review.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is difficult or missing today?
+      placeholder: I want to export a report as ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? Include alternatives you considered.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Chat / streaming
+        - Research pipeline
+        - Report rendering or exports
+        - Activation / settings
+        - Documentation
+        - Developer experience
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, examples, or links that clarify the request.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find an equivalent request.
+          required: true
+        - label: This request preserves the project's self-hosted, open-source scope.
+          required: true

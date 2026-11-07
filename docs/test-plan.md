@@ -1,58 +1,79 @@
-# Test Plan: Zero-Config OAuth API Key Provisioning
- 
-## What Changed
-The app now auto-detects when no API key is configured and shows an "Activate Free AI" banner with a one-click OAuth flow. The backend was fixed to properly route through OpenRouter, and config supports hot-reload after key provisioning.
- 
-## Primary End-to-End Flow
- 
-### Test 1: Setup banner appears in demo mode
-**Steps:**
-1. Open http://localhost:8000 in the browser
-2. Wait for the page to fully load
- 
-**Pass criteria:**
-- The "Activate Free AI" banner is visible at the top of the main content area
-- The banner contains the text "Activate Free AI" and a "FREE" badge
-- The banner contains descriptive text mentioning "Gemini, Llama, DeepSeek"
-- The model selector in the header shows "Gemini 2.0 (Free)"
- 
-### Test 2: /api/config endpoint returns correct demo mode state
-**Steps:**
-1. Navigate to http://localhost:8000/api/config in browser
- 
-**Pass criteria:**
-- Response JSON shows "demo_mode": true 
-- Response JSON shows "has_api_key": false 
-- Response JSON shows "default_model": "google/gemini-2.0-flash-001" 
- 
-### Test 3: Demo mode chat streaming works
-**Steps:**
-1. Navigate back to http://localhost:8000
-2. Type "Hello, how are you?" in the chat input
-3. Press Enter to send
- 
-**Pass criteria:**
-- The demo response streams in token-by-token (typing animation visible)
-- The response contains the demo mode marker text: "Running in demo mode"
-- The response includes structured content (bold headings, bullet points)
-- The conversation appears in the sidebar history
- 
-### Test 4: Activate AI button triggers OpenRouter popup
-**Steps:**
-1. Click the "Activate Free AI" button in the setup banner
- 
-**Pass criteria:**
-- A popup window opens pointing to https://openrouter.ai/auth?callback_url=... 
-- The callback_url parameter in the popup URL is URL-encoded (contains %3A, %2F etc.)
-- The button changes to show "Connecting..." with a spinner animation
- 
-### Test 5: Model switcher cycles through free models
-**Steps:**
-1. Close the popup (we can't complete OAuth without credentials)
-2. Click the model selector pill in the header
- 
-**Pass criteria:**
-- Model label changes from "Gemini 2.0 (Free)" to "Llama 3.3 (Free)"
-- A toast notification appears saying "Switched to Llama 3.3 (Free)"
-- Click again: changes to "DeepSeek R1 (Free)"
-- Click again: cycles back to "Gemini 2.0 (Free)"
+# Test Plan
+
+This plan covers the checks used for the current 2.x codebase. It is intentionally focused on behavior that can be reproduced from a clean checkout.
+
+## Automated checks
+
+### 1. Lint
+
+```bash
+ruff check backend tests scripts
+```
+
+Covers imports, unused names, modernization, and configured style rules. Configuration lives in `pyproject.toml`; the frontend is excluded because it has no build toolchain.
+
+### 2. Unit and API tests
+
+```bash
+pytest -q
+```
+
+The suite forces demo mode, sets an empty `OPENROUTER_API_KEY`, and resets the in-memory research stores around every test. It covers:
+
+- health and config contracts, including secret non-disclosure,
+- security headers,
+- research request validation and token enforcement,
+- chat payload validation and the labelled demo stream,
+- OAuth URL validation and blank-code rejection,
+- report schema bounds and defaults,
+- PDF fallback header/size, DOCX container, and standalone slide HTML,
+- demo templates, real-mode content, empty responses, provider errors, and demo-marker stripping.
+
+### 3. Research pipeline
+
+```bash
+python scripts/test_pipeline.py
+```
+
+Runs all six agent stages against live search in demo mode. It asserts that a plan exists, that sources are collected, that the report has sections and citations, and that charts are produced. Search is third-party and may be rate-limited; a network failure is reported rather than hidden.
+
+### 4. HTTP end-to-end
+
+```bash
+python run.py
+# in another terminal
+python scripts/test_api_e2e.py http://127.0.0.1:8000
+```
+
+Exercises the running service: health, job creation, SSE progress, report retrieval, rejection of a missing token, and PDF/DOCX/slides downloads. File signatures are checked (`%PDF`, ZIP `PK`, HTML).
+
+### 5. Browser flow
+
+A Playwright check against Microsoft Edge covers:
+
+- initial config, model menu, settings, and activation entry points,
+- demo chat streaming and code-copy round-trip,
+- research form, progress, report rendering, history, and PDF download,
+- mobile sidebar toggle and research navigation,
+- console errors and uncaught page errors.
+
+The script is environment-specific and not committed; the behavior it checks is also represented in the API tests where practical.
+
+## Manual checks
+
+| Area | Check |
+| --- | --- |
+| First run | `python run.py` without `.env`; demo banner visible, app usable |
+| Activation | OAuth popup returns to the app and the banner disappears after a valid key |
+| Live chat | A configured key produces real model output; an invalid key shows an error |
+| Research | All three depths complete; report has citations and at least one chart |
+| Exports | PDF opens, DOCX opens, slides navigate with arrow keys |
+| Mobile | Sidebar opens and closes; research form and report remain usable at 390px |
+| Security | `/api/config` and `/api/health` contain no key; report URL without token returns 403 |
+
+## Known environmental limits
+
+- Real OpenRouter inference requires a key and was not exercised in the launch audit environment.
+- Docker builds require a Docker daemon; CI does not build the image.
+- WeasyPrint requires native Pango/Cairo libraries. On Windows without them, the ReportLab fallback is the active PDF path.
+- DuckDuckGo availability varies by network and rate limit. A failed search should fail the job, never fabricate sources.

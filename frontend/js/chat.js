@@ -1,17 +1,20 @@
 /**
- * Chat — chat state, send/stream, conversations, sidebar, modals
+ * Chat — chat state, streaming, conversations, and the export modal.
  */
 
+import { getSelectedModel } from './config.js';
+import { escHtml, renderMarkdown } from './markdown.js';
 import { loadConversations, saveConversations } from './storage.js';
-import { renderMarkdown } from './markdown.js';
 import { streamChat } from './streaming.js';
 import {
-  scrollToBottom,
-  showToast,
-  showProgress,
-  hideProgress,
   appendMessage,
+  closeModal,
+  hideProgress,
+  openModal,
   renderMessages,
+  scrollToBottom,
+  showProgress,
+  showToast,
 } from './ui.js';
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -22,25 +25,27 @@ export const state = {
   isStreaming: false,
   controller: null,
   sidebarOpen: window.innerWidth > 768,
-  models: [
-    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 (Free)' },
-    { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B (Free)' },
-    { id: 'z-ai/glm-4.5-air:free', label: 'GLM 4.5 Air (Free)' },
-  ],
-  modelIndex: 0,
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const $chat        = document.getElementById('chatArea');
-const $welcome     = document.getElementById('welcomeScreen');
-const $messages    = document.getElementById('messages');
-const $input       = document.getElementById('messageInput');
-const $sendBtn     = document.getElementById('sendBtn');
-const $sidebar     = document.getElementById('sidebar');
-const $overlay     = document.getElementById('sidebarOverlay');
-const $histList    = document.getElementById('conversationList');
+const $welcome = document.getElementById('welcomeScreen');
+const $messages = document.getElementById('messages');
+const $input = document.getElementById('messageInput');
+const $sendBtn = document.getElementById('sendBtn');
+const $sidebar = document.getElementById('sidebar');
+const $overlay = document.getElementById('sidebarOverlay');
+const $histList = document.getElementById('conversationList');
 const $headerTitle = document.getElementById('conversationTitle');
-const $modelLabel  = document.getElementById('modelName');
+
+const SEND_ICON = `
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <line x1="22" y1="2" x2="11" y2="13"></line>
+    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+  </svg>`;
+const STOP_ICON = `
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+  </svg>`;
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
 export function toggleSidebar() {
@@ -48,7 +53,7 @@ export function toggleSidebar() {
   updateSidebar();
 }
 
-function updateSidebar() {
+export function updateSidebar() {
   if (state.sidebarOpen) {
     $sidebar.classList.remove('sidebar--collapsed');
     if (window.innerWidth <= 768) {
@@ -62,13 +67,6 @@ function updateSidebar() {
   }
 }
 
-// ── Model cycling ──────────────────────────────────────────────────────────
-export function cycleModel() {
-  state.modelIndex = (state.modelIndex + 1) % state.models.length;
-  $modelLabel.textContent = state.models[state.modelIndex].label;
-  showToast(`Switched to ${state.models[state.modelIndex].label}`, 'success');
-}
-
 // ── Conversations ──────────────────────────────────────────────────────────
 export function newChat() {
   state.currentId = null;
@@ -76,46 +74,46 @@ export function newChat() {
   $messages.innerHTML = '';
   $messages.style.display = 'none';
   $welcome.style.display = 'flex';
-  $headerTitle.textContent = 'New conversation';
+  $headerTitle.textContent = 'New Conversation';
   $input.value = '';
   $input.style.height = 'auto';
   $sendBtn.disabled = true;
-  if (window.innerWidth <= 768 && state.sidebarOpen) toggleSidebar();
+  closeSidebarOnMobile();
 }
 
 export function clearChat() {
   if (state.messages.length === 0) return;
-  if (!confirm('Clear this conversation?')) return;
+  if (!window.confirm('Clear this conversation?')) return;
   if (state.currentId) {
-    state.conversations = state.conversations.filter(c => c.id !== state.currentId);
+    state.conversations = state.conversations.filter((conversation) => conversation.id !== state.currentId);
     saveConversations(state.conversations);
   }
   newChat();
 }
 
 function loadConversation(id) {
-  const conv = state.conversations.find(c => c.id === id);
-  if (!conv) return;
+  const conversation = state.conversations.find((item) => item.id === id);
+  if (!conversation) return;
   state.currentId = id;
-  state.messages = [...conv.messages];
+  state.messages = [...conversation.messages];
   renderMessages(state.messages);
-  $headerTitle.textContent = conv.title;
-  if (window.innerWidth <= 768 && state.sidebarOpen) toggleSidebar();
+  $headerTitle.textContent = conversation.title;
+  closeSidebarOnMobile();
 }
 
 function saveConversation() {
-  const existing = state.conversations.findIndex(c => c.id === state.currentId);
+  const existing = state.conversations.findIndex((item) => item.id === state.currentId);
   const title = state.messages[0]?.content?.slice(0, 60) || 'New conversation';
-  const conv = {
+  const conversation = {
     id: state.currentId,
     title,
     messages: state.messages,
     updatedAt: Date.now(),
   };
   if (existing >= 0) {
-    state.conversations[existing] = conv;
+    state.conversations[existing] = conversation;
   } else {
-    state.conversations.unshift(conv);
+    state.conversations.unshift(conversation);
   }
   saveConversations(state.conversations);
   renderHistory();
@@ -128,9 +126,7 @@ export function renderHistory() {
     return;
   }
 
-  const groups = groupConversations(state.conversations);
-
-  groups.forEach(({ label, items }) => {
+  groupConversations(state.conversations).forEach(({ label, items }) => {
     const groupEl = document.createElement('div');
     groupEl.className = 'sidebar__date-group';
 
@@ -139,33 +135,34 @@ export function renderHistory() {
     labelEl.textContent = label;
     groupEl.appendChild(labelEl);
 
-    items.forEach(conv => {
+    items.forEach((conversation) => {
       const el = document.createElement('div');
-      el.className = 'sidebar__conversation' + (conv.id === state.currentId ? ' sidebar__conversation--active' : '');
+      el.className =
+        'sidebar__conversation' +
+        (conversation.id === state.currentId ? ' sidebar__conversation--active' : '');
+      el.title = conversation.title;
       el.innerHTML = `
         <svg class="sidebar__conversation-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
         <div class="sidebar__conversation-body">
-          <div class="sidebar__conversation-title">${conv.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-          <div class="sidebar__conversation-time">${formatRelativeTime(conv.updatedAt)}</div>
+          <div class="sidebar__conversation-title">${escHtml(conversation.title)}</div>
+          <div class="sidebar__conversation-time">${formatRelativeTime(conversation.updatedAt)}</div>
         </div>
-        <button class="sidebar__conversation-delete" aria-label="Delete conversation" data-id="${conv.id}">
+        <button class="sidebar__conversation-delete" type="button" aria-label="Delete conversation">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
         </button>
       `;
-      el.title = conv.title;
-      el.addEventListener('click', (e) => {
-        if (e.target.closest('.sidebar__conversation-delete')) return;
-        loadConversation(conv.id);
+      el.addEventListener('click', (event) => {
+        if (event.target.closest('.sidebar__conversation-delete')) return;
+        loadConversation(conversation.id);
       });
-      const deleteBtn = el.querySelector('.sidebar__conversation-delete');
-      deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteConversation(conv.id);
+      el.querySelector('.sidebar__conversation-delete').addEventListener('click', (event) => {
+        event.stopPropagation();
+        deleteConversation(conversation.id);
       });
       groupEl.appendChild(el);
     });
@@ -180,19 +177,14 @@ function groupConversations(conversations) {
   const yesterday = today - 86400000;
   const weekAgo = today - 7 * 86400000;
 
-  const groups = {
-    today: [],
-    yesterday: [],
-    previousWeek: [],
-    older: [],
-  };
+  const groups = { today: [], yesterday: [], previousWeek: [], older: [] };
 
-  conversations.forEach(conv => {
-    const t = conv.updatedAt || 0;
-    if (t >= today) groups.today.push(conv);
-    else if (t >= yesterday) groups.yesterday.push(conv);
-    else if (t >= weekAgo) groups.previousWeek.push(conv);
-    else groups.older.push(conv);
+  conversations.forEach((conversation) => {
+    const timestamp = conversation.updatedAt || 0;
+    if (timestamp >= today) groups.today.push(conversation);
+    else if (timestamp >= yesterday) groups.yesterday.push(conversation);
+    else if (timestamp >= weekAgo) groups.previousWeek.push(conversation);
+    else groups.older.push(conversation);
   });
 
   const result = [];
@@ -205,8 +197,7 @@ function groupConversations(conversations) {
 
 function formatRelativeTime(timestamp) {
   if (!timestamp) return '';
-  const now = Date.now();
-  const diff = now - timestamp;
+  const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
@@ -218,65 +209,18 @@ function formatRelativeTime(timestamp) {
 }
 
 function deleteConversation(id) {
-  if (!confirm('Delete this conversation?')) return;
-  state.conversations = state.conversations.filter(c => c.id !== id);
+  if (!window.confirm('Delete this conversation?')) return;
+  state.conversations = state.conversations.filter((conversation) => conversation.id !== id);
   saveConversations(state.conversations);
   if (state.currentId === id) {
-    state.currentId = null;
-    state.messages = [];
-    $messages.innerHTML = '';
-    $messages.style.display = 'none';
-    $welcome.style.display = 'flex';
-    $headerTitle.textContent = 'New conversation';
-    $input.value = '';
-    $input.style.height = 'auto';
-    $sendBtn.disabled = true;
+    newChat();
   }
   renderHistory();
 }
 
-// ── Code Block Copy ──────────────────────────────────────────────────────
-function handleCodeCopy(btn) {
-  const code = btn.dataset.code;
-  if (!code) return;
-
-  if (!navigator.clipboard) {
-    showToast('Clipboard not available', 'error');
-    return;
-  }
-
-  navigator.clipboard.writeText(code).then(() => {
-    btn.classList.add('copied');
-    btn.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-      Copied!
-    `;
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      btn.innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        Copy
-      `;
-    }, 2000);
-    showToast('Code copied to clipboard', 'success');
-  }).catch(() => {
-    showToast('Failed to copy code', 'error');
-  });
+function closeSidebarOnMobile() {
+  if (window.innerWidth <= 768 && state.sidebarOpen) toggleSidebar();
 }
-
-// Event delegation for code block copy buttons
-$messages.addEventListener('click', (e) => {
-  const copyBtn = e.target.closest('.code-block__copy');
-  if (copyBtn) {
-    handleCodeCopy(copyBtn);
-    return;
-  }
-});
 
 // ── Suggestions ────────────────────────────────────────────────────────────
 export function useSuggestion(text) {
@@ -286,7 +230,7 @@ export function useSuggestion(text) {
   send();
 }
 
-// ── Send / Stream ──────────────────────────────────────────────────────────
+// ── Send / stream ──────────────────────────────────────────────────────────
 export async function send() {
   const text = $input.value.trim();
   if (!text || state.isStreaming) return;
@@ -303,61 +247,69 @@ export async function send() {
 
   $input.value = '';
   $input.style.height = 'auto';
-  $sendBtn.disabled = true;
-  $input.focus();
-
-  scrollToBottom();
   setStreaming(true);
   showProgress();
 
   const aiMsgEl = appendMessage({ role: 'ai', content: '' });
   const bubble = aiMsgEl.querySelector('.message__bubble');
-  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div></div>';
+  bubble.innerHTML =
+    '<div class="typing-indicator"><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div><div class="typing-dot animate-blink"></div></div>';
 
   state.controller = new AbortController();
+  let streamed = '';
+
+  const handleError = (error) => {
+    if (error.name === 'AbortError') {
+      if (streamed.trim()) {
+        bubble.innerHTML =
+          renderMarkdown(streamed) + '<div class="message__stopped">Stopped</div>';
+        state.messages.push({ role: 'assistant', content: streamed });
+        saveConversation();
+      } else {
+        aiMsgEl.remove();
+      }
+      return;
+    }
+
+    bubble.innerHTML = `
+      <div class="message__error">
+        <strong>The AI request failed.</strong>
+        <span>${escHtml(error.message || 'Check the server logs and try again.')}</span>
+      </div>
+    `;
+    showToast('The AI request failed.', 'error');
+  };
 
   const messagesPayload = [
     {
       role: 'system',
-      content: 'You are Zynex, a helpful AI assistant. Answer ONLY the most recent user question directly and concisely. Do NOT repeat, summarize, or reference any previous questions or answers in the conversation. Go straight to the answer for the current question.'
+      content:
+        'You are Zynex, a helpful AI assistant. Answer the most recent user question directly and concisely. Do not repeat or summarize previous questions and answers. Go straight to the answer for the current question.',
     },
-    ...state.messages
+    ...state.messages,
   ];
 
   await streamChat({
     messages: messagesPayload,
-    model: state.models[state.modelIndex].id,
+    model: getSelectedModel(),
     signal: state.controller.signal,
     onChunk(fullContent) {
-      bubble.innerHTML = renderMarkdown(fullContent) + '<span class="stream-cursor animate-cursor-blink"></span>';
+      streamed = fullContent;
+      bubble.innerHTML =
+        renderMarkdown(fullContent) + '<span class="stream-cursor animate-cursor-blink"></span>';
       scrollToBottom();
     },
     onDone(fullContent) {
+      streamed = fullContent;
+      if (!fullContent.trim()) {
+        handleError(new Error('The model returned an empty response.'));
+        return;
+      }
       bubble.innerHTML = renderMarkdown(fullContent);
-
-      const followUp = document.createElement('div');
-      followUp.style.cssText = 'margin-top:10px;font-size:12.5px;color:var(--color-text-muted);font-style:italic;';
-      followUp.textContent = 'Is there anything else you would like to know?';
-      aiMsgEl.querySelector('.message__inner').appendChild(followUp);
-
       state.messages.push({ role: 'assistant', content: fullContent });
       saveConversation();
     },
-    onError(err) {
-      if (err.name === 'AbortError') {
-        bubble.innerHTML = renderMarkdown(bubble.textContent.replace('▊', '') || '*Response stopped.*');
-      } else {
-        bubble.innerHTML = `
-          <div style="color:#fca5a5;padding:10px 0;">
-            ⚠ <strong>Search failed.</strong> Could not get a response from the AI.<br>
-            <span style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;display:block;">
-              Please try again. If the problem continues, reload the page.
-            </span>
-          </div>
-        `;
-        showToast('Search failed — please try again', 'error');
-      }
-    },
+    onError: handleError,
   });
 
   hideProgress();
@@ -370,59 +322,35 @@ export function stopStream() {
   state.controller?.abort();
 }
 
-function setStreaming(val) {
-  state.isStreaming = val;
-  $sendBtn.classList.toggle('input-area__send--loading', val);
-  $sendBtn.disabled = false;
+function setStreaming(value) {
+  state.isStreaming = value;
+  $sendBtn.classList.toggle('input-area__send--loading', value);
+  $sendBtn.innerHTML = value ? STOP_ICON : SEND_ICON;
+  $sendBtn.setAttribute('aria-label', value ? 'Stop generating' : 'Send message');
+  $sendBtn.disabled = value ? false : !$input.value.trim();
 }
 
-// ── Modal Wiring ───────────────────────────────────────────────────────────
+// ── Export modal ───────────────────────────────────────────────────────────
 export function bindModals() {
-  const $settingsBtn = document.getElementById('settingsBtn');
-  const $settingsModal = document.getElementById('settingsModal');
-  const $closeSettingsBtn = document.getElementById('closeSettingsBtn');
-  const $cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
-  const $saveSettingsBtn = document.getElementById('saveSettingsBtn');
-  const $settingsBackdrop = document.getElementById('settingsBackdrop');
-
-  function openSettings() {
-    const $apiKeyInput = document.getElementById('apiKeyInput');
-    const $apiEndpointInput = document.getElementById('apiEndpointInput');
-    if ($apiKeyInput) $apiKeyInput.value = localStorage.getItem('zynex_api_key') || '';
-    if ($apiEndpointInput) $apiEndpointInput.value = localStorage.getItem('zynex_api_endpoint') || '';
-    $settingsModal.classList.add('modal--visible');
-  }
-  function closeSettings() {
-    $settingsModal.classList.remove('modal--visible');
-  }
-
-  $settingsBtn?.addEventListener('click', openSettings);
-  $closeSettingsBtn?.addEventListener('click', closeSettings);
-  $cancelSettingsBtn?.addEventListener('click', closeSettings);
-  $settingsBackdrop?.addEventListener('click', closeSettings);
-  $saveSettingsBtn?.addEventListener('click', () => {
-    const $apiKeyInput = document.getElementById('apiKeyInput');
-    const $apiEndpointInput = document.getElementById('apiEndpointInput');
-    if ($apiKeyInput?.value.trim()) localStorage.setItem('zynex_api_key', $apiKeyInput.value.trim());
-    if ($apiEndpointInput?.value.trim()) localStorage.setItem('zynex_api_endpoint', $apiEndpointInput.value.trim());
-    showToast('Settings saved', 'success');
-    closeSettings();
-  });
-
+  const modalId = 'exportModal';
   const $exportBtn = document.getElementById('exportBtn');
-  const $exportModal = document.getElementById('exportModal');
   const $closeExportBtn = document.getElementById('closeExportBtn');
   const $cancelExportBtn = document.getElementById('cancelExportBtn');
   const $confirmExportBtn = document.getElementById('confirmExportBtn');
   const $exportBackdrop = document.getElementById('exportBackdrop');
+
   let selectedFormat = null;
 
   function openExport() {
     selectedFormat = null;
-    $exportModal.classList.add('modal--visible');
+    document.querySelectorAll('.export-option').forEach((button) => {
+      button.classList.remove('button--primary');
+    });
+    openModal(modalId);
   }
+
   function closeExport() {
-    $exportModal.classList.remove('modal--visible');
+    closeModal(modalId);
   }
 
   $exportBtn?.addEventListener('click', openExport);
@@ -430,21 +358,23 @@ export function bindModals() {
   $cancelExportBtn?.addEventListener('click', closeExport);
   $exportBackdrop?.addEventListener('click', closeExport);
 
-  document.querySelectorAll('.export-option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.export-option').forEach(b => b.classList.remove('button--primary'));
-      btn.classList.add('button--primary');
-      selectedFormat = btn.dataset.format;
+  document.querySelectorAll('.export-option').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.export-option').forEach((item) => {
+        item.classList.remove('button--primary');
+      });
+      button.classList.add('button--primary');
+      selectedFormat = button.dataset.format;
     });
   });
 
   $confirmExportBtn?.addEventListener('click', () => {
     if (!selectedFormat) {
-      showToast('Select an export format', 'error');
+      showToast('Select an export format.', 'error');
       return;
     }
     if (state.messages.length === 0) {
-      showToast('No messages to export', 'error');
+      showToast('No messages to export.', 'error');
       return;
     }
     exportConversation(selectedFormat);
@@ -452,34 +382,35 @@ export function bindModals() {
   });
 }
 
-// ── Export ─────────────────────────────────────────────────────────────────
 function exportConversation(format) {
   let content = '';
   const title = $headerTitle.textContent || 'conversation';
 
   if (format === 'markdown') {
     content = `# ${title}\n\n`;
-    state.messages.forEach(m => {
-      const role = m.role === 'user' ? '**You**' : '**Zynex**';
-      content += `${role}\n\n${m.content}\n\n---\n\n`;
+    state.messages.forEach((message) => {
+      const role = message.role === 'user' ? '**You**' : '**Zynex**';
+      content += `${role}\n\n${message.content}\n\n---\n\n`;
     });
   } else if (format === 'json') {
     content = JSON.stringify({ title, messages: state.messages }, null, 2);
   } else {
     content = `${title}\n\n`;
-    state.messages.forEach(m => {
-      const role = m.role === 'user' ? 'You' : 'Zynex';
-      content += `${role}: ${m.content}\n\n`;
+    state.messages.forEach((message) => {
+      const role = message.role === 'user' ? 'You' : 'Zynex';
+      content += `${role}: ${message.content}\n\n`;
     });
   }
 
-  const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
-  const blob = new Blob([content], { type: 'text/plain' });
+  const extension = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${title.replace(/[^a-z0-9]/gi, '_').slice(0, 50)}.${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${title.replace(/[^a-z0-9]/gi, '_').slice(0, 50)}.${extension}`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
   showToast(`Exported as ${format}`, 'success');
 }

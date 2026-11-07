@@ -15,14 +15,18 @@ Flow:
 from __future__ import annotations
 
 import logging
+import os
+import re
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from backend.config import get_settings, reload_settings
+from backend import __version__
+from backend.config import FREE_MODELS, get_settings, reload_settings
+from backend.middleware.rate_limit import limiter
 
 logger = logging.getLogger("zynex.auth")
 
@@ -51,106 +55,137 @@ class CallbackResponse(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("/auth/url", response_model=AuthURLResponse)
-async def get_auth_url(callback_url: str):
+@limiter.limit("10/minute")
+async def get_auth_url(request: Request, callback_url: str) -> AuthURLResponse:
     """
     Return the OpenRouter auth URL that the frontend should open.
-    The callback_url is the page on *this* app that OpenRouter will redirect to.
+
+    The callback_url is the page on this app that OpenRouter will redirect to.
     """
-    s = get_settings()
-    if s.has_api_key:
+    settings = get_settings()
+    if settings.has_api_key:
         raise HTTPException(
             status_code=400,
             detail="API key already configured — no activation needed.",
         )
 
-    auth_url = (
-        "https://openrouter.ai/auth"
-        f"?callback_url={quote(callback_url, safe='')}"
-    )
-    return AuthURLResponse(url=auth_url, demo_mode=s.demo_mode)
+    parsed = urlparse(callback_url)
+    if (
+        parsed.scheme not in ("http", "https")
+        or not parsed.netloc
+        or len(callback_url) > 2048
+        or any(char.isspace() for char in callback_url)
+    ):
+        raise HTTPException(status_code=400, detail="Invalid callback URL.")
+
+    auth_url = "https://openrouter.ai/auth" f"?callback_url={quote(callback_url, safe='')}"
+    return AuthURLResponse(url=auth_url, demo_mode=settings.demo_mode)
 
 
 @router.post("/auth/callback", response_model=CallbackResponse)
-async def handle_callback(req: CallbackRequest):
+@limiter.limit("10/minute")
+async def handle_callback(request: Request, req: CallbackRequest) -> CallbackResponse:
     """
     Exchange the code from OpenRouter for an API key.
     Saves the key to .env and reloads the app config in-memory.
     """
-    s = get_settings()
-    if s.has_api_key:
+    settings = get_settings()
+    if settings.has_api_key:
         return CallbackResponse(ok=True, message="API key already configured.")
 
-    # Exchange code for API key
+    code = req.code.strip()
+    if not code or len(code) > 2048 or any(char.isspace() for char in code):
+        raise HTTPException(status_code=400, detail="Invalid authorization code.")
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
+            response = await client.post(
                 "https://openrouter.ai/api/v1/auth/keys",
-                json={"code": req.code},
+                json={"code": code},
             )
-            resp.raise_for_status()
-            data = resp.json()
+            response.raise_for_status()
+            data = response.json()
     except httpx.HTTPStatusError as exc:
-        logger.error("OpenRouter key exchange failed: %s %s", exc.response.status_code, exc.response.text)
+        logger.error(
+            "OpenRouter key exchange failed: HTTP %s",
+            exc.response.status_code,
+        )
         raise HTTPException(
             status_code=502,
-            detail=f"OpenRouter returned {exc.response.status_code}: {exc.response.text}",
-        )
+            detail="OpenRouter rejected the authorization code. Please try again.",
+        ) from exc
     except httpx.RequestError as exc:
         logger.error("OpenRouter key exchange network error: %s", exc)
-        raise HTTPException(status_code=502, detail="Could not reach OpenRouter.")
+        raise HTTPException(status_code=502, detail="Could not reach OpenRouter.") from exc
 
-    api_key = data.get("key", "")
+    api_key = str(data.get("key", "")).strip()
     if not api_key:
         raise HTTPException(status_code=502, detail="OpenRouter did not return a key.")
 
-    # Save to .env
     _save_key_to_env(api_key)
-
-    # Reload config in-memory
     reload_settings()
 
-    masked = api_key[:8] + "..." + api_key[-4:]
-    logger.info("API key provisioned successfully: %s", masked)
-
-    return CallbackResponse(ok=True, message="API key activated! You now have free AI access.")
+    logger.info("OpenRouter API key provisioned successfully")
+    return CallbackResponse(ok=True, message="API key activated — you now have live AI access.")
 
 
 @router.get("/config")
-async def get_config():
+async def get_config() -> dict:
     """Expose non-secret config to the frontend."""
-    s = get_settings()
+    settings = get_settings()
     return {
-        "demo_mode": s.demo_mode,
-        "has_api_key": s.has_api_key,
-        "default_model": s.DEFAULT_MODEL,
+        "demo_mode": settings.demo_mode,
+        "has_api_key": settings.has_api_key,
+        "default_model": settings.DEFAULT_MODEL,
+        "max_tokens": settings.MAX_TOKENS,
+        "free_models": list(FREE_MODELS),
+        "version": __version__,
     }
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+def _validate_api_key(api_key: str) -> str:
+    """Reject keys that could corrupt the .env file."""
+    if not re.fullmatch(r"[A-Za-z0-9._~-]{20,300}", api_key):
+        raise HTTPException(
+            status_code=502,
+            detail="OpenRouter returned a malformed API key.",
+        )
+    return api_key
+
+
 def _save_key_to_env(api_key: str) -> None:
     """Append or update OPENROUTER_API_KEY in the .env file."""
+    api_key = _validate_api_key(api_key)
     env_path = _ENV_FILE
 
     if env_path.exists():
-        content = env_path.read_text()
+        content = env_path.read_text(encoding="utf-8")
         lines = content.splitlines()
         new_lines = []
         found = False
         for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("OPENROUTER_API_KEY"):
+            if line.strip().startswith("OPENROUTER_API_KEY"):
                 new_lines.append(f"OPENROUTER_API_KEY={api_key}")
                 found = True
             else:
                 new_lines.append(line)
         if not found:
             new_lines.append(f"OPENROUTER_API_KEY={api_key}")
-        env_path.write_text("\n".join(new_lines) + "\n")
+        env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     else:
         env_path.write_text(
             "# Auto-provisioned by Zynex OAuth flow\n"
-            f"OPENROUTER_API_KEY={api_key}\n"
+            f"OPENROUTER_API_KEY={api_key}\n",
+            encoding="utf-8",
         )
 
-    logger.info("Saved API key to %s", env_path)
+    # Keep the key unreadable by other OS users where supported.
+    if os.name != "nt":
+        try:
+            env_path.chmod(0o600)
+        except OSError as exc:
+            logger.warning("Could not restrict .env permissions: %s", exc)
+
+    logger.info("Saved a provisioned API key to .env")

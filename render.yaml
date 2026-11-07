@@ -10,7 +10,7 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: DEFAULT_MODEL
-        value: google/gemini-2.0-flash-001
+        value: google/gemma-4-31b-it:free
       - key: HOST
         value: 0.0.0.0
       - key: RELOAD

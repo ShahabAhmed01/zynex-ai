@@ -13,7 +13,8 @@ services:
       - PORT=8000
       - PYTHONUNBUFFERED=1
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DEFAULT_MODEL=${DEFAULT_MODEL:-google/gemini-2.0-flash-001}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-google/gemma-4-31b-it:free}
+      - MAX_TOKENS=${MAX_TOKENS:-4096}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]

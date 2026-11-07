@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zynex"
-version = "1.0.0"
+version = "2.0.0"
 description = "AI-Powered Research Agent — Autonomous web research, analysis, and professional report generation."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-    {name = "Shahab Ahmed", email = "shahabahmed@example.com"},
+    {name = "Shahab Ahmed"},
 ]
 keywords = [
     "ai",
@@ -35,36 +35,36 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Internet :: WWW/HTTP",
-    "Typing :: Typed",
 ]
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "openai>=1.6.0",
-    "duckduckgo-search>=4.0.0",
-    "weasyprint>=60.0",
-    "matplotlib>=3.8.0",
-    "jinja2>=3.1.0",
-    "python-dotenv>=1.0.0",
-    "python-multipart>=0.0.6",
-    "pydantic>=2.5.0",
-    "httpx>=0.25.0",
-    "slowapi>=0.1.9",
-    "python-json-logger>=2.0.7",
+    "fastapi>=0.104.0,<1.0",
+    "uvicorn[standard]>=0.24.0,<1.0",
+    "openai>=3.0.0,<4.0",
+    "ddgs>=9.0.0",
+    "weasyprint>=60.0,<71.0",
+    "reportlab>=4.0,<5.0",
+    "matplotlib>=3.8.0,<4.0",
+    "numpy>=1.26.0",
+    "pillow>=10.0,<13.0",
+    "jinja2>=3.1.0,<4.0",
+    "python-docx>=1.1.0,<2.0",
+    "python-dotenv>=1.0.0,<2.0",
+    "python-multipart>=0.0.6,<1.0",
+    "pydantic>=2.5.0,<3.0",
+    "httpx>=0.25.0,<1.0",
+    "slowapi>=0.1.9,<1.0",
+    "python-json-logger>=2.0.7,<5.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
+    "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    "httpx>=0.25.0",
-    "black>=23.12.0",
-    "isort>=5.13.0",
-    "ruff>=0.1.0",
-    "mypy>=1.8.0",
-    "pre-commit>=3.6.0",
+    "ruff>=0.6.0",
+    "pip-audit>=2.7.0",
 ]
 
 [project.urls]
@@ -90,14 +90,20 @@ known_first_party = ["backend"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+exclude = ["frontend"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]
+"tests/*.py" = ["E402"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -111,3 +117,6 @@ check_untyped_defs = true
 
 [tool.setuptools.packages.find]
 include = ["backend*"]
+
+[tool.setuptools.package-data]
+backend = ["templates/*.html"]

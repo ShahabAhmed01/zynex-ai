@@ -101,6 +101,39 @@ export function appendMessage({ role, content }) {
   return wrap;
 }
 
+// ── Code block copy (delegated across chat + reports) ──────────────────────
+export function initCodeCopy(root = document) {
+  root.addEventListener('click', (event) => {
+    const button = event.target.closest('.code-block__copy');
+    if (!button) return;
+
+    const code = button.dataset.code || '';
+    if (!navigator.clipboard) {
+      showToast('Clipboard not available in this browser.', 'error');
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        const original = button.innerHTML;
+        button.classList.add('copied');
+        button.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Copied!
+        `;
+        window.setTimeout(() => {
+          button.classList.remove('copied');
+          button.innerHTML = original;
+        }, 2000);
+        showToast('Code copied to clipboard', 'success');
+      })
+      .catch(() => showToast('Failed to copy code.', 'error'));
+  });
+}
+
 export function copyMessage(btn) {
   if (!navigator.clipboard) {
     showToast('Clipboard not available', 'error');

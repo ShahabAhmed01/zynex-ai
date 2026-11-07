@@ -1,1 +1,3 @@
-# Zynex Backend Package
+"""Zynex backend package."""
+
+__version__ = "2.0.0"

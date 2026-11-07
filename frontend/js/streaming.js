@@ -1,83 +1,101 @@
 /**
- * Streaming — SSE streaming handler
+ * Streaming â€” Server-Sent Events handler for chat completions.
  */
+
+const CHAT_ENDPOINT = '/api/chat';
+
+function parseSseLine(line) {
+  if (!line.startsWith('data:')) return null;
+  const raw = line.slice(5).trim();
+  if (!raw) return null;
+  if (raw === '[DONE]') return { done: true };
+  try {
+    return { json: JSON.parse(raw) };
+  } catch {
+    return null;
+  }
+}
+
+function extractDelta(json) {
+  return (
+    json?.choices?.[0]?.delta?.content ||
+    json?.choices?.[0]?.message?.content ||
+    json?.content ||
+    json?.text ||
+    ''
+  );
+}
 
 export async function streamChat({ messages, model, signal, onChunk, onDone, onError }) {
   try {
-    const endpoint = localStorage.getItem('zynex_api_endpoint') || '/api/chat';
-    const response = await fetch(endpoint, {
+    const response = await fetch(CHAT_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
       body: JSON.stringify({ messages, model, stream: true }),
       signal,
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || err.message || `Server error ${response.status}`);
+      const errorBody = await response.json().catch(() => ({}));
+      throw new Error(
+        errorBody.detail || errorBody.message || `Server error ${response.status}`
+      );
+    }
+    if (!response.body) {
+      throw new Error('This browser cannot read streaming responses.');
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
     let buffer = '';
+    let finished = false;
+    let streamError = '';
 
-    while (true) {
+    const handleLine = (line) => {
+      const parsed = parseSseLine(line.replace(/\r$/, ''));
+      if (!parsed) return;
+      if (parsed.done) {
+        finished = true;
+        return;
+      }
+      if (parsed.json?.error) {
+        streamError = String(parsed.json.error);
+        return;
+      }
+      const delta = extractDelta(parsed.json);
+      if (delta) {
+        fullContent += delta;
+        onChunk(fullContent);
+      }
+    };
+
+    while (!finished) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // Keep incomplete last line in buffer
+      buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') break;
-          try {
-            const json = JSON.parse(data);
-            const delta = json.choices?.[0]?.delta?.content
-                       || json.content
-                       || json.text
-                       || '';
-            if (delta) {
-              fullContent += delta;
-              onChunk(fullContent);
-            }
-          } catch {
-            // Ignore parse errors on partial chunks
-          }
-        }
+        handleLine(line);
+        if (finished || streamError) break;
       }
     }
 
-    // Process any remaining data in buffer
-    if (buffer.trim()) {
-      const lines = buffer.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6).trim();
-          if (data !== '[DONE]') {
-            try {
-              const json = JSON.parse(data);
-              const delta = json.choices?.[0]?.delta?.content
-                         || json.content
-                         || json.text
-                         || '';
-              if (delta) {
-                fullContent += delta;
-                onChunk(fullContent);
-              }
-            } catch {
-              // Ignore parse errors on partial chunks
-            }
-          }
-        }
-      }
+    // Flush any final line that arrived without a trailing newline.
+    if (buffer.trim()) handleLine(buffer.trim());
+
+    if (streamError) {
+      throw new Error(streamError);
+    }
+    if (!finished && !fullContent) {
+      throw new Error('The server closed the stream without sending an answer.');
     }
 
     onDone(fullContent);
-  } catch (err) {
-    onError(err);
+  } catch (error) {
+    onError(error);
   }
 }

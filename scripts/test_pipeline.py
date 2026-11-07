@@ -10,11 +10,11 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
-from backend.agents.query_planner import plan_research
-from backend.agents.web_researcher import research_web
-from backend.agents.source_analyzer import analyze_sources
-from backend.agents.report_composer import compose_report
 from backend.agents.chart_generator import generate_charts
+from backend.agents.query_planner import plan_research
+from backend.agents.report_composer import compose_report
+from backend.agents.source_analyzer import analyze_sources
+from backend.agents.web_researcher import research_web
 
 
 async def main() -> int:
